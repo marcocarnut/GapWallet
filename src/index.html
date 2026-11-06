@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<!--
+  GapWallet: the online half of zerogap. A watch-only Bitcoin wallet: it holds
+  public keys, builds PSBTs for the offline signer, and broadcasts what comes
+  back. It can't spend: no private key is ever in this page.
+
+  SPDX-License-Identifier: GPL-3.0-or-later
+
+  This program is free software: you can redistribute it and/or modify it under
+  the terms of the GNU General Public License as published by the Free Software
+  Foundation, either version 3 of the License, or (at your option) any later
+  version. It is distributed WITHOUT ANY WARRANTY; without even the implied
+  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details <https://www.gnu.org/licenses/>.
+
+  This one file is the program, unminified. It is built from src/ and vendor/
+  by tools/build.mjs; vendor/MANIFEST.json lists each bundled file's origin:
+    zerogap's PSBT and BIP-32 libraries (GPL-3.0-or-later)
+    @noble/hashes, @noble/secp256k1 (MIT, Paul Miller)
+    qrcode-generator (MIT, Kazuhiko Arase; "QR Code" is a trademark of DENSO WAVE)
+    jsQR (Apache-2.0, Cosmo Wolfe)
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="%%CSP%%">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GapWallet</title>
+<style>%%STYLE%%</style>
+</head>
+<body>
+<div id="app"></div>
+<noscript>GapWallet needs JavaScript.</noscript>
+<script>%%SCRIPT%%</script>
+</body>
+</html>

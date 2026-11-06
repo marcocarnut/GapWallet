@@ -36,8 +36,8 @@ The page is one HTML file with a `<meta>` policy:
 - `connect-src` can't name a server the user will type later, and a static
   file can't change its own policy after the fact. It can narrow it: policies
   add up, and each one must allow a request. So:
-  - the static policy says `connect-src https: http://localhost:*
-    http://127.0.0.1:*`;
+  - the static policy says `connect-src https: http:` (your own server may
+    well be plain HTTP on the local network);
   - at start, before any request, the page adds a second `<meta>` naming only
     the origin of the saved server;
   - changing the server saves it and reloads the page.
@@ -72,11 +72,33 @@ Observed on mempool.space (2026-11-06), and to be kept in mind:
 
 ### Requests
 
-At most 4 at a time. Each has a 20 s timeout. `429` and `503`, and network
-errors on `GET`, wait (1 s, 2 s, 4 s, or `Retry-After`) and try again, up to
-three times. `POST /tx` is **never** retried automatically: after a failure
-the user decides, seeing the server's answer. (Sending the same transaction
-twice is harmless, but a retry can hide what happened.)
+At most 4 at a time, each with a 20 s timeout, and paced: one request every
+50 ms on a server on your own network (localhost, private addresses, `.local`,
+`.lan`), and every 500 ms anywhere else, since a public server's limit has to
+be assumed.
+
+**mempool.space's limit can't be seen from a page.** Measured 2026-11-06:
+about 20 requests in 3 seconds gets a `429` from its nginx, with no CORS header
+and no `Retry-After`. Even 3 to 5 requests a second got some, and a run of
+connection timeouts of about 10 s each; after the last of those bursts the
+server stopped accepting connections from this machine for a while, while
+blockstream.info still answered. (Probably a temporary block, not established:
+a local tunnel was also flapping.) Going over costs far more than going
+slowly. The browser hides an answer without that header, so the page sees a
+failed `fetch`, the same as a dropped connection. So:
+
+- any failure on a `GET` may be the limit. It holds *every* request back (1 s,
+  doubling each time, up to 32 s, for up to 6 tries) and doubles the interval
+  between requests, up to 4 s. 20 successes in a row bring the interval down by
+  a quarter, back to the starting pace at the fastest. The page says when it is waiting;
+- a `429` or `503` the page *can* see (a server with CORS on its errors) does
+  the same, and `Retry-After` is honoured if there is one;
+- when the tries run out, the error says the server can't be reached *or is
+  limiting requests*, since the page can't tell which.
+
+`POST /tx` is paced but **never** retried automatically: after a failure the
+user decides, seeing the server's answer. (Sending the same transaction twice
+is harmless, but a retry can hide what happened.)
 
 A scan is only ever started by the user: on opening an account, the refresh
 button, and after a broadcast. No timers: polling tells the server when the
@@ -91,7 +113,8 @@ A server can lie by omission or invent coins, so:
   computed here: it must be the coin's txid, and the output's script and
   amount must be what the server claimed and what we derived. A mismatch stops
   the build;
-- the previous transaction goes in the PSBT, so the signer checks it too;
+- the previous transaction goes in the PSBT, so the signer checks it too
+  (without its witnesses: the txid doesn't cover them, and they cost QR space);
 - broadcasting: the txid the server returns must be the one computed here.
 
 What it can still do: hide coins or history, or show a false balance. That
@@ -108,10 +131,12 @@ Esplora has no xpub endpoint. The page derives addresses and asks about each.
   `chain_stats.tx_count + mempool_stats.tx_count > 0`.
 - For used addresses with funds (funded minus spent, confirmed plus
   mempool, above 0): `GET /address/:address/utxo`.
-- For used addresses: `GET /address/:address/txs`, then older pages until a
-  page is short (under 25 confirmed). Transactions are merged by txid.
-- An empty account costs `2 × gap limit` requests. Each used address costs
-  up to 2 more, plus its history pages.
+- For used addresses: `GET /address/:address/txs`, then older pages until
+  the address's `tx_count` is reached or a page brings nothing new (page sizes
+  differ between servers). Transactions are merged by txid.
+- An empty account costs `2 × gap limit` requests: 40 at the default, 20 s or
+  more on a public server. Each used address costs up to 2 more, plus its
+  history pages.
 
 **Balance:** confirmed coins; unconfirmed coins are shown on their own.
 **History:** each transaction's effect on the account: amounts paid to our
