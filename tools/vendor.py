@@ -34,10 +34,11 @@ CACHE = os.path.join(ROOT, ".cache")
 
 # Main at this commit. Re-pin after S1 merges: the PSBT library's home
 # moves from apps/psbtview/lib to apps/signer/lib/psbt.
-ZEROGAP_COMMIT = "eb6c79f"
+ZEROGAP_COMMIT = "e70edf8"
 PSBT_HOME = "apps/psbtview/lib/"
 ZEROGAP_FILES = [("apps/signer/lib/bip32.js", "zerogap/bip32.js"),
-                 ("apps/signer/lib/crypto.js", "zerogap/crypto.js")] + [
+                 ("apps/signer/lib/crypto.js", "zerogap/crypto.js"),
+                 ("lib/js/bbqr.js", "zerogap/bbqr.js")] + [
     (PSBT_HOME + f, "zerogap/psbt/" + f)
     for f in ("basen.js", "bech32.js", "bytes.js", "hashes.js", "psbt.js", "script.js", "transport.js", "tx.js")]
 

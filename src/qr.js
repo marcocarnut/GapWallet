@@ -11,8 +11,10 @@ export const MAX_ALPHANUMERIC = 4296;
 const QUIET = 4;
 
 // -> { size (modules), version, dark(row, col) } or null if it doesn't fit.
-export function makeQr(text, mode = "Alphanumeric") {
-  const q = qrcode(0, "L");
+// `version` 0 takes the smallest that fits; a BBQr series gives its own, the
+// same for every code, since readers expect that.
+export function makeQr(text, mode = "Alphanumeric", version = 0) {
+  const q = qrcode(version, "L");
   try {
     q.addData(text, mode);
     q.make();

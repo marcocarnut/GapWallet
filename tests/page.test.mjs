@@ -7,7 +7,7 @@ import { createServer } from "node:http";
 import { existsSync, readFileSync } from "node:fs";
 import { Chain, haveSigner, loadSigner, MASTER_FINGERPRINT } from "./helpers.mjs";
 import { addressAt } from "../src/account.js";
-import { parseAccount } from "../src/descriptor.js";
+import { accountDescriptor, parseAccount } from "../src/descriptor.js";
 import { makeQr } from "../src/qr.js";
 import { fromBase64, toHex } from "../vendor/zerogap/psbt/bytes.js";
 
@@ -201,7 +201,7 @@ test("watch-only: the fingerprint can be added where it's needed, with no new im
 test("a real 429 with no CORS header: the browser can't see it, and the scan still finishes", { skip, timeout: 120000 }, async () => {
   chain = new Chain("signet");
   chain.fund(addressAt(account(), 0, 1).address, 42000);
-  chain.limit = { perWindow: 3, windowMs: 1000 };
+  chain.limit = { perWindow: 6, windowMs: 1000 };
   const { page, ctx } = await open();
   await importAccount(page);
   await chooseServer(page);
@@ -399,18 +399,188 @@ test("a nested segwit account, through the page and the real signer", { skip }, 
   await ctx.close();
 });
 
-test("a transaction other than the one built needs an explicit yes; a big PSBT's choice is explicit", { skip }, async () => {
-  chain = new Chain("signet");
-  const a = account();
-  // previous transactions so large that the PSBT can't fit one code
+// A fake camera: a canvas stream showing these codes in turn, through the real
+// <video> and decoder.
+async function fakeCamera(page, codes, ms) {
+  const frames = codes.map((text) => {
+    const qr = makeQr(text);
+    const dark = [];
+    for (let r = 0; r < qr.size; r++) for (let c = 0; c < qr.size; c++) if (qr.dark(r, c)) dark.push([r, c]);
+    return { dark, size: qr.size };
+  });
+  await page.evaluate(({ frames, ms }) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 720;
+    const g = canvas.getContext("2d");
+    let at = 0;
+    const draw = () => {
+      const { dark, size } = frames[at];
+      const scale = Math.floor(720 / (size + 8));
+      g.fillStyle = "#fff";
+      g.fillRect(0, 0, 720, 720);
+      g.fillStyle = "#000";
+      for (const [r, c] of dark) g.fillRect((c + 4) * scale, (r + 4) * scale, scale, scale);
+    };
+    draw();
+    setInterval(() => {
+      at = (at + 1) % frames.length;
+      draw();
+    }, ms);
+    navigator.mediaDevices.getUserMedia = async () => canvas.captureStream(20);
+  }, { frames, ms });
+}
+
+// A large PSBT: previous transactions with many outputs, so several codes are needed.
+function bigChain(a) {
+  const c = new Chain("signet");
   for (let i = 0; i < 4; i++) {
-    const { txid } = chain.fund(addressAt(a, 0, i).address, 20000);
-    const t = chain.txs.get(txid);
+    const { txid } = c.fund(addressAt(a, 0, i).address, 20000);
+    const t = c.txs.get(txid);
     t.tx.outputs.push(...Array.from({ length: 40 }, (_, k) => ({ value: 1000 + k, script: t.tx.outputs[0].script.map((b, j) => (j > 1 ? (b + k + 1) & 255 : b)) })));
-    chain.txs.delete(txid);
-    chain.txs.set(chain.add(t.tx, t.height, t.inputs), t);
+    c.txs.delete(txid);
+    c.add(t.tx, t.height, t.inputs);
   }
+  return c;
+}
+
+test("W2: a large PSBT as an animated series, read off the screen and signed; the signed series read back", { skip, timeout: 120000 }, async () => {
+  const a = account();
+  chain = bigChain(a);
+  const { page, ctx, seen } = await open();
+  await importAccount(page);
+  await chooseServer(page);
+  await page.waitForSelector("#balance");
+  await click(page, "#tab-send");
+  await page.waitForSelector("#address");
+  await hasText(page, "about an hour");
+  await page.type("#address", PAYEE);
+  await page.type("#amount", "0.0007");
+  await page.$eval("#rate", (e) => { e.value = ""; });
+  await page.type("#rate", "1");
+  await click(page, "#review");
+  await page.waitForSelector("#to-sign");
+  await click(page, "#to-sign");
+  await page.waitForSelector("#series-qr");
+  const info = await text(page, "#qr-info");
+  assert.match(info, /BBQr, compressed: \d+ codes of QR version \d+/);
+  const total = Number(/: (\d+) codes/.exec(info)[1]);
+  const version = Number(/version (\d+)/.exec(info)[1]);
+  assert.ok(total > 1 && version <= 12, info);
+
+  // what's on the screen, frame by frame, through the page's decoder, as a camera would
+  const { decodeFrame } = await import("../src/qr.js");
+  const { Joiner } = await import("../vendor/zerogap/bbqr.js");
+  const j = new Joiner();
+  const seenParts = new Set();
+  for (let tries = 0; tries < 200 && seenParts.size < total; tries++) {
+    const frame = await page.evaluate(() => {
+      const c = document.getElementById("series-qr");
+      return { part: c.dataset.part, w: c.width, data: Array.from(c.getContext("2d").getImageData(0, 0, c.width, c.height).data) };
+    });
+    const read = decodeFrame(Uint8ClampedArray.from(frame.data), frame.w, frame.w);
+    assert.ok(read, `part ${frame.part} reads`);
+    assert.equal(read.text.length <= 8 + 2000, true);
+    j.add(read.text);
+    seenParts.add(frame.part);
+    await new Promise((d) => setTimeout(d, 150));
+  }
+  assert.equal(seenParts.size, total, "the series comes round");
+  const file = j.result();
+  assert.equal(file.type, "P");
+  await page.$eval("details", (e) => { e.open = true; });
+  assert.equal(toHex(file.bytes), toHex(fromBase64(await page.$eval("#psbt-text", (e) => e.value))));
+
+  // Pause holds it; a smaller series can be chosen
+  await click(page, "#series-pause");
+  const held = await page.$eval("#series-qr", (e) => e.dataset.part);
+  await new Promise((d) => setTimeout(d, 700));
+  assert.equal(await page.$eval("#series-qr", (e) => e.dataset.part), held);
+  await page.select("#series-speed", "250");
+  await page.waitForSelector("#series-qr");
+
+  // sign what came off the screen, and answer with a series through the fake camera
+  const psbt = signer.psbtLib.parsePsbt(file.bytes);
+  const done = signer.sign.finalize(signer.sign.signPsbt(psbt, signer.master, { network: "testnet" }).psbt);
+  const { split } = await import("../vendor/zerogap/bbqr.js");
+  const series = split(done.tx, "T", { encoding: "2", maxParts: 4 });
+  assert.ok(series.parts.length > 1, "the signed transaction needs several codes here");
+  await click(page, "#to-scan");
+  await page.waitForSelector("#start-camera");
+  await fakeCamera(page, series.parts, 250);
+  await click(page, "#start-camera");
+  await hasText(page, "of " + series.parts.length + " codes");
+  await page.waitForFunction(() => document.body.innerText.includes("This is the transaction built here, signed."), { timeout: 30000 });
+  assert.equal(await text(page, "#signed-txid"), done.txid);
+  assert.deepEqual(seen.errors, []);
+  await ctx.close();
+});
+
+test("W2: a series pasted as lines; a damaged one is said to be", { skip }, async () => {
+  chain = new Chain("signet");
+  chain.fund(addressAt(account(), 0, 0).address, 90000);
   const { page, ctx } = await open();
+  await importAccount(page);
+  await chooseServer(page);
+  await page.waitForSelector("#balance");
+  await click(page, "#tab-send");
+  await page.waitForSelector("#address");
+  await hasText(page, "about an hour");
+  await page.type("#address", PAYEE);
+  await page.type("#amount", "0.0002");
+  await click(page, "#review");
+  await page.waitForSelector("#to-sign");
+  await click(page, "#to-sign");
+  await page.waitForSelector("#psbt-qr");
+  await click(page, "#format-bbqr"); // by choice, though it fits one code
+  await page.waitForSelector("#series-qr");
+  assert.match(await text(page, "#qr-info"), /1 code of QR version/);
+  await page.$eval("details", (e) => { e.open = true; });
+  const psbt = signer.psbtLib.parsePsbt(fromBase64(await page.$eval("#psbt-text", (e) => e.value)));
+  const done = signer.sign.finalize(signer.sign.signPsbt(psbt, signer.master, { network: "testnet" }).psbt);
+  await click(page, "#to-scan");
+  await page.waitForSelector("#signed");
+
+  const { split } = await import("../vendor/zerogap/bbqr.js");
+  const { parts } = split(done.tx, "T", { encoding: "H", maxParts: 3, minVersion: 3 });
+  const paste = async (v) => {
+    await page.$eval("#signed", (e, x) => { e.value = x; }, v);
+    await click(page, "#read-pasted");
+  };
+  await paste(`${parts[0]}\n${parts[0].slice(0, -2)}FF`);
+  await hasText(page, "started over");
+  await paste([...parts].reverse().join("\n"));
+  await hasText(page, "This is the transaction built here, signed.");
+  assert.equal(await text(page, "#signed-txid"), done.txid);
+  await ctx.close();
+});
+
+test("W2: a public key read with the camera; a seed's code doesn't reach the screen", { skip, timeout: 60000 }, async () => {
+  const { page, ctx } = await open();
+  await click(page, "input[value=signet]");
+  await fakeCamera(page, ["02640321987654321098765432109876543210987654"], 200);
+  await click(page, "#import-start");
+  await hasText(page, "isn't a descriptor");
+  assert.equal(await page.$eval("#key", (e) => e.value), "");
+  assert.equal(await page.evaluate(() => document.body.innerText.includes("0264032198")), false);
+  await ctx.close();
+
+  const second = await open();
+  await click(second.page, "input[value=signet]");
+  const { split } = await import("../vendor/zerogap/bbqr.js");
+  const descriptor = accountDescriptor(account());
+  const { parts } = split(new TextEncoder().encode(descriptor), "U", { encoding: "2", maxParts: 2, minVersion: 2 });
+  assert.equal(parts.length, 2);
+  await fakeCamera(second.page, parts, 250);
+  await click(second.page, "#import-start");
+  await hasText(second.page, addressAt(account(), 0, 0).address);
+  assert.equal(await second.page.$eval("#key", (e) => e.value), descriptor);
+  assert.equal(await second.page.$eval("#add", (e) => e.disabled), false);
+  await second.ctx.close();
+});
+
+test("a transaction other than the one built needs an explicit yes; a big PSBT's choice is explicit", { skip }, async () => {
+  chain = bigChain(account()); // previous transactions so large that the PSBT can't fit one code
+  const { page, ctx, seen } = await open();
   await importAccount(page);
   await chooseServer(page);
   await page.waitForSelector("#balance");
@@ -424,6 +594,8 @@ test("a transaction other than the one built needs an explicit yes; a big PSBT's
   await page.waitForSelector("#to-sign");
   await click(page, "#to-sign");
   await hasText(page, "doesn't fit in one QR code");
+  assert.equal(await page.$("#format-base43:disabled") !== null, true);
+  await page.waitForSelector("#series-qr");
   // the button stays off until the user acknowledges
   assert.equal(await page.$eval("#drop-previous", (e) => e.disabled), true);
   await click(page, "#ack-previous");
@@ -431,6 +603,7 @@ test("a transaction other than the one built needs an explicit yes; a big PSBT's
   await page.waitForSelector("#psbt-qr");
   await hasText(page, "Previous transactions are left out");
   await hasText(page, "can't prove");
+  assert.deepEqual(seen.errors, []);
 
   await click(page, "#to-scan");
   await page.waitForSelector("#signed");

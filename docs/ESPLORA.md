@@ -225,11 +225,29 @@ hardened), and coin type from the chosen network. A version that disagrees
 with the network is refused.
 
 **Size:** the previous transaction can make the PSBT too big for one code.
-With no animated codes yet (W2), the page offers to leave out
+It then goes out as a BBQr series ("QR codes" below). zerogap's signer doesn't
+read series yet (S2), so the page also offers to leave out
 `PSBT_IN_NON_WITNESS_UTXO`, and says what that costs: the signer can no longer
 prove the amounts of the coins, so a lying server could trick it into a fee
 higher than it shows (the fee attack on segwit v0). It is the user's explicit
 choice, each time; it is never dropped silently.
+
+## QR codes
+
+- **Out:** Electrum's Base43 in one code, by default, whenever it fits. Otherwise
+  or by choice, a BBQr series: file type `P`, compressed (`Z`) unless that
+  doesn't shrink it, every code the same QR version at error correction L.
+  The page picks the fewest codes whose version is at most 12; the user can
+  change the number of codes and the speed (500 ms per code to start with).
+  Those defaults want tuning on the rig (B2).
+- **In:** the camera or a paste: hex, Base64 or Base43 in one code, or BBQr of
+  type `T` or `P`, one code or a series, in any order, each as often as it
+  comes round. BBQr's text is also Base43's, so `B$…` is BBQr unless it reads
+  as a transaction, as in the signer. A code from another series starts that
+  one over; a damaged series is dropped, with a message, and read again.
+- **Public keys** may also be read with the camera: a descriptor, zpub or ypub
+  as plain text, or BBQr of type `U`. What a code holds appears on the screen
+  only if it is a public key, in case a seed's code is shown by mistake.
 
 ## Privacy: what each server learns
 
