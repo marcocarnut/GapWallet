@@ -5,6 +5,8 @@
 //
 // The server is not believed: each coin's previous transaction is hashed
 // here, and its output must match what the server said and what we derive.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { addressAt } from "./account.js";
 import { NETWORK_INFO } from "./descriptor.js";
 import { MIN_RATE, MAX_RATE, DUST, SelectError, selectCoins } from "./coinselect.js";

@@ -1,4 +1,6 @@
 // The page starts here.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { installCrypto } from "./crypto.js";
 import { parseServer } from "./esplora.js";
 import { load } from "./store.js";

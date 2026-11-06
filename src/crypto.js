@@ -4,6 +4,8 @@
 // GapWallet holds no private keys, so it has no use for private-key
 // operations. setCrypto() insists on all of them being there; here each one
 // throws, so nothing can quietly sign or derive a private key in this page.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { sha256, sha512 } from "../vendor/noble-hashes/sha2.js";
 import { ripemd160 } from "../vendor/noble-hashes/legacy.js";
 import { hmac as nobleHmac } from "../vendor/noble-hashes/hmac.js";

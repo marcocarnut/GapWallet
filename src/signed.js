@@ -6,6 +6,8 @@
 // Throws DecodeError with a message for people. A finished transaction with
 // the expected txid is the one we built, signed: a segwit txid doesn't
 // cover the signatures but does cover every input and output.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { toHex, DecodeError } from "../vendor/zerogap/psbt/bytes.js";
 import { readPayload } from "../vendor/zerogap/psbt/transport.js";
 import { parsePsbt } from "../vendor/zerogap/psbt/psbt.js";

@@ -84,6 +84,9 @@ Node 18 or later; `npm test` needs Chromium for the page tests.
   connections only to the server you chose. All text reaches the page as text
   nodes.
 
-**Licence:** not decided yet. The vendored zerogap libraries are
-GPL-3.0-or-later, so copying them makes that the likely answer; the others are
-MIT or Apache-2.0 (`vendor/MANIFEST.json`).
+## Licence
+
+GPL-3.0-or-later: see `LICENSE`. Bundled libraries keep their own licences,
+all compatible: zerogap's PSBT and BIP-32 libraries (GPL-3.0-or-later), the noble
+libraries and qrcode-generator (MIT), jsQR (Apache-2.0). `vendor/MANIFEST.json`
+lists each file; their licence texts are in `vendor/`.

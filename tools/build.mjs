@@ -12,6 +12,8 @@
 //
 // The Content-Security-Policy allows the inline script and style by their
 // SHA-256, so the page runs nothing it wasn't built with.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";

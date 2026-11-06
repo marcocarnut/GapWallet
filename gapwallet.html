@@ -4,6 +4,15 @@
   public keys, builds PSBTs for the offline signer, and broadcasts what comes
   back. It can't spend: no private key is ever in this page.
 
+  SPDX-License-Identifier: GPL-3.0-or-later
+
+  This program is free software: you can redistribute it and/or modify it under
+  the terms of the GNU General Public License as published by the Free Software
+  Foundation, either version 3 of the License, or (at your option) any later
+  version. It is distributed WITHOUT ANY WARRANTY; without even the implied
+  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details <https://www.gnu.org/licenses/>.
+
   This one file is the program, unminified. It is built from src/ and vendor/
   by tools/build.mjs; vendor/MANIFEST.json lists each bundled file's origin:
     zerogap's PSBT and BIP-32 libraries (GPL-3.0-or-later)
@@ -14,11 +23,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-1cTzUjOCo6b7RrILOOC06+xbbKj0QVgoIaWWMYZYGJQ='; style-src 'sha256-a5sN7CbAv2FUxjcYTUKqpx7OWn/9tY9JiAcIFtE/dZc='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-avO2wk6tJn1+1H628rJw0sCJqGZf8FLUY5PHALBMSSI='; style-src 'sha256-6KnHjxtN3aIictIuLVMvdYwWFRDEEDiMZSipx/Q9Nnw='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GapWallet</title>
-<style>:root {
+<style>/* SPDX-License-Identifier: GPL-3.0-or-later */
+:root {
   color-scheme: light dark;
   --bg: #f6f6f4; --panel: #fff; --ink: #1c1c1a; --dim: #6a6a64; --line: #deded8; --accent: #b35900; --accent-ink: #fff;
   --good: #1a7f4b; --bad: #b3261e; --warn-bg: #fff4e0; --warn-line: #e6b566; --bad-bg: #fdecea; --good-bg: #e6f4ec;
@@ -3721,6 +3731,8 @@ __exports["setCrypto"] = setCrypto; __exports["cr"] = cr; __exports["taggedHash"
 // GapWallet holds no private keys, so it has no use for private-key
 // operations. setCrypto() insists on all of them being there; here each one
 // throws, so nothing can quietly sign or derive a private key in this page.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 const { sha256, sha512 } = __mod("vendor/noble-hashes/sha2.js");
 const { ripemd160 } = __mod("vendor/noble-hashes/legacy.js");
 const { hmac: nobleHmac } = __mod("vendor/noble-hashes/hmac.js");
@@ -3773,6 +3785,8 @@ __exports["installCrypto"] = installCrypto;
 // The Esplora client. docs/ESPLORA.md lists every request; a request that
 // isn't here isn't made.
 //
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 const GENESIS = {
   mainnet: "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
@@ -3980,6 +3994,8 @@ __exports["isPrivateHost"] = isPrivateHost; __exports["EsploraError"] = EsploraE
 { const __exports = {}; __modules.set("src/store.js", __exports);
 // What this browser keeps: settings, and each account's public key
 // (docs/ESPLORA.md, "Privacy"). Balances and history are not kept.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 const KEY = "gapwallet.v1";
 
 const EMPTY = { accounts: [], current: null, servers: {} };
@@ -4002,6 +4018,8 @@ __exports["load"] = load; __exports["save"] = save;
 { const __exports = {}; __modules.set("src/dom.js", __exports);
 // Small helpers for building the page. Children are always text nodes or
 // elements, never markup.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 function h(tag, attrs, ...children) {
   const e = document.createElement(tag);
   for (const [name, value] of Object.entries(attrs || {})) {
@@ -4443,6 +4461,8 @@ __exports["Bip32Error"] = Bip32Error; __exports["versionFor"] = versionFor; __ex
 //
 // W1 takes P2WPKH accounts only. Private keys are refused by what they look
 // like, before anything else reads them, and an error never repeats its input.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 const { HARDENED, parseXpub, serializeXpub, Bip32Error } = __mod("vendor/zerogap/bip32.js");
 
 class ImportError extends Error {
@@ -4898,6 +4918,8 @@ __exports["parseScript"] = parseScript; __exports["disassemble"] = disassemble; 
 // An account's addresses, derived here and never taken from a server.
 //
 //   addressAt(account, chain, index) -> { address, script, pubkey, chain, index, path, steps }
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 const { HARDENED, deriveChild } = __mod("vendor/zerogap/bip32.js");
 const { hash160 } = __mod("vendor/zerogap/psbt/hashes.js");
 const { p2wpkhScript, scriptToAddress } = __mod("vendor/zerogap/psbt/script.js");
@@ -4937,6 +4959,8 @@ __exports["addressAt"] = addressAt;
 //   entry = addressAt()'s, plus { stats, used }
 //   Coin  = { txid, vout, value, confirmed, height, entry }
 //   Item  = { txid, net, fee, kind: "in" | "out" | "self", height | null, time | null, confirmations }
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 const { addressAt } = __mod("src/account.js");
 
 const DEFAULT_GAP = 20;
@@ -5046,6 +5070,8 @@ __exports["historyItem"] = historyItem; __exports["scanAccount"] = scanAccount; 
 // Fees, sizes and choosing coins (docs/ESPLORA.md, "Building a transaction").
 // Everything here is deterministic: the same coins, amount and rate give the
 // same choice. The random order of inputs and outputs is build.js's.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 const { compactSizeLength } = __mod("vendor/zerogap/psbt/bytes.js");
 
 const MIN_RATE = 0.1, MAX_RATE = 10000;
@@ -5799,6 +5825,8 @@ __exports["PsbtError"] = PsbtError; __exports["computeLocktime"] = computeLockti
 //
 // The server is not believed: each coin's previous transaction is hashed
 // here, and its output must match what the server said and what we derive.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 const { addressAt } = __mod("src/account.js");
 const { NETWORK_INFO } = __mod("src/descriptor.js");
 const { MIN_RATE, MAX_RATE, DUST, SelectError, selectCoins } = __mod("src/coinselect.js");
@@ -6056,6 +6084,8 @@ __exports["readPayload"] = readPayload; __exports["electrumQrText"] = electrumQr
 // Throws DecodeError with a message for people. A finished transaction with
 // the expected txid is the one we built, signed: a segwit txid doesn't
 // cover the signatures but does cover every input and output.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 const { toHex, DecodeError } = __mod("vendor/zerogap/psbt/bytes.js");
 const { readPayload } = __mod("vendor/zerogap/psbt/transport.js");
 const { parsePsbt } = __mod("vendor/zerogap/psbt/psbt.js");
@@ -18432,6 +18462,8 @@ __modules.set("vendor/jsqr/jsQR.cjs", { default: module.exports }); }
 { const __exports = {}; __modules.set("src/qr.js", __exports);
 // QR codes out (qrcode-generator) and in (jsQR, on the camera's frames, in this
 // page: no frame leaves it).
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 const qrcode = __mod("vendor/qrcode-generator/qrcode.mjs").default;
 const jsQR = __mod("vendor/jsqr/jsQR.cjs").default;
 
@@ -18533,6 +18565,8 @@ __exports["makeQr"] = makeQr; __exports["drawQr"] = drawQr; __exports["decodeFra
 // ======== src/amount.js ========
 { const __exports = {}; __modules.set("src/amount.js", __exports);
 // Amounts, as text and whole satoshis. Never through floating point.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 const SATS = 100000000;
 const MAX_SATS = 2100000000000000;
 
@@ -18560,6 +18594,8 @@ __exports["parseBtc"] = parseBtc; __exports["formatBtc"] = formatBtc; __exports[
 { const __exports = {}; __modules.set("src/ui.js", __exports);
 // The page. All text reaches the DOM as text nodes, so nothing a server says
 // can become markup.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 const { h, mount, copyText, download } = __mod("src/dom.js");
 const { NETWORK_INFO, parseAccount, accountDescriptor, accountPath, ImportError } = __mod("src/descriptor.js");
 const { addressAt } = __mod("src/account.js");
@@ -19196,6 +19232,8 @@ __exports["App"] = App;
 // ======== src/main.js ========
 { const __exports = {}; __modules.set("src/main.js", __exports);
 // The page starts here.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 const { installCrypto } = __mod("src/crypto.js");
 const { parseServer } = __mod("src/esplora.js");
 const { load } = __mod("src/store.js");

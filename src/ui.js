@@ -1,5 +1,7 @@
 // The page. All text reaches the DOM as text nodes, so nothing a server says
 // can become markup.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { h, mount, copyText, download } from "./dom.js";
 import { NETWORK_INFO, parseAccount, accountDescriptor, accountPath, ImportError } from "./descriptor.js";
 import { addressAt } from "./account.js";

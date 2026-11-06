@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
 """
 Fetches the libraries GapWallet carries in vendor/, from pinned sources, and
 checks them. Every file is byte for byte what its source holds: nothing in

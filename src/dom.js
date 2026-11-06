@@ -1,5 +1,7 @@
 // Small helpers for building the page. Children are always text nodes or
 // elements, never markup.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 export function h(tag, attrs, ...children) {
   const e = document.createElement(tag);
   for (const [name, value] of Object.entries(attrs || {})) {

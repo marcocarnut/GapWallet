@@ -1,6 +1,8 @@
 // Fees, sizes and choosing coins (docs/ESPLORA.md, "Building a transaction").
 // Everything here is deterministic: the same coins, amount and rate give the
 // same choice. The random order of inputs and outputs is build.js's.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { compactSizeLength } from "../vendor/zerogap/psbt/bytes.js";
 
 export const MIN_RATE = 0.1, MAX_RATE = 10000;

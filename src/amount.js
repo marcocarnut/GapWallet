@@ -1,4 +1,6 @@
 // Amounts, as text and whole satoshis. Never through floating point.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 export const SATS = 100000000;
 const MAX_SATS = 2100000000000000;
 

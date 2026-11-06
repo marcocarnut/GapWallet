@@ -1,5 +1,7 @@
 // What the tests share: a small chain in memory that speaks Esplora, and the
 // real signer.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { webcrypto } from "node:crypto";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";

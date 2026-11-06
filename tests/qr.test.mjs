@@ -1,4 +1,6 @@
 // Codes made here read back, through the decoder the page uses.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 import test from "node:test";
 import assert from "node:assert/strict";
 import { makeQr, decodeFrame, MAX_ALPHANUMERIC } from "../src/qr.js";

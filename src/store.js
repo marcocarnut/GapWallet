@@ -1,5 +1,7 @@
 // What this browser keeps: settings, and each account's public key
 // (docs/ESPLORA.md, "Privacy"). Balances and history are not kept.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 const KEY = "gapwallet.v1";
 
 const EMPTY = { accounts: [], current: null, servers: {} };

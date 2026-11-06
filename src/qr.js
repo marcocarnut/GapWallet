@@ -1,5 +1,7 @@
 // QR codes out (qrcode-generator) and in (jsQR, on the camera's frames, in this
 // page: no frame leaves it).
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 import qrcode from "../vendor/qrcode-generator/qrcode.mjs";
 import jsQR from "../vendor/jsqr/jsQR.cjs";
 

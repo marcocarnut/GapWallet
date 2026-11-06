@@ -1,6 +1,8 @@
 // The Esplora client. docs/ESPLORA.md lists every request; a request that
 // isn't here isn't made.
 //
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 export const GENESIS = {
   mainnet: "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",

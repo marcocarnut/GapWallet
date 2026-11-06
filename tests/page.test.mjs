@@ -1,4 +1,6 @@
 // The built page, in headless Chromium, against the stub chain over HTTP.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";

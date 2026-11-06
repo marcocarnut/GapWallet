@@ -1,6 +1,8 @@
 // An account's addresses, derived here and never taken from a server.
 //
 //   addressAt(account, chain, index) -> { address, script, pubkey, chain, index, path, steps }
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { HARDENED, deriveChild } from "../vendor/zerogap/bip32.js";
 import { hash160 } from "../vendor/zerogap/psbt/hashes.js";
 import { p2wpkhScript, scriptToAddress } from "../vendor/zerogap/psbt/script.js";

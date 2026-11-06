@@ -9,6 +9,8 @@
 //
 // W1 takes P2WPKH accounts only. Private keys are refused by what they look
 // like, before anything else reads them, and an error never repeats its input.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { HARDENED, parseXpub, serializeXpub, Bip32Error } from "../vendor/zerogap/bip32.js";
 
 export class ImportError extends Error {

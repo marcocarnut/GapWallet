@@ -3,6 +3,8 @@
 // servers, not against what we think they say. Addresses are public test keys'.
 //
 //   node --experimental-default-type=module tools/record_fixtures.mjs
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { mkdirSync, writeFileSync } from "node:fs";
 import { PRESETS } from "../src/esplora.js";
 

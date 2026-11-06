@@ -8,6 +8,8 @@
 //   entry = addressAt()'s, plus { stats, used }
 //   Coin  = { txid, vout, value, confirmed, height, entry }
 //   Item  = { txid, net, fee, kind: "in" | "out" | "self", height | null, time | null, confirmations }
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { addressAt } from "./account.js";
 
 export const DEFAULT_GAP = 20;

@@ -1,5 +1,7 @@
 // The Esplora client against answers recorded from mempool.space
 // (tools/record_fixtures.mjs): the shapes are the real ones.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
