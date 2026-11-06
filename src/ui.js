@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { h, mount, copyText, download } from "./dom.js";
-import { NETWORK_INFO, parseAccount, accountDescriptor, accountPath, ImportError } from "./descriptor.js";
+import { NETWORK_INFO, SCRIPT_INFO, parseAccount, accountDescriptor, accountPath, accountSlip132, ImportError } from "./descriptor.js";
 import { addressAt } from "./account.js";
 import { Esplora, EsploraError, PRESETS, parseServer } from "./esplora.js";
 import { DEFAULT_GAP, scanAccount } from "./scan.js";
@@ -16,7 +16,6 @@ import { save } from "./store.js";
 import { toBase64 } from "../vendor/zerogap/psbt/bytes.js";
 import { electrumQrText } from "../vendor/zerogap/psbt/transport.js";
 import { scriptToAddress } from "../vendor/zerogap/psbt/script.js";
-import { serializeXpub } from "../vendor/zerogap/bip32.js";
 
 const btc = (sats) => `${formatBtc(sats)} BTC`;
 const shortId = (id) => `${id.slice(0, 10)}…${id.slice(-6)}`;
@@ -114,7 +113,7 @@ export class App {
   importView() {
     const form = { network: null };
     const preview = h("div", { id: "preview" });
-    const key = h("textarea", { id: "key", spellcheck: "false", autocapitalize: "off", placeholder: "wpkh([73c5da0a/84h/0h/0h]xpub…/<0;1>/*)#…   or   zpub…" });
+    const key = h("textarea", { id: "key", spellcheck: "false", autocapitalize: "off", placeholder: "wpkh([73c5da0a/84h/0h/0h]xpub…/<0;1>/*)#…   or   zpub…, ypub…" });
     const fp = h("input", { id: "fingerprint", type: "text", spellcheck: "false", placeholder: "73c5da0a", maxlength: "8" });
     const label = h("input", { id: "label", type: "text", value: `Account ${this.state.accounts.length + 1}` });
     const add = h("button", { id: "add", class: "primary", disabled: true }, "Add this account");
@@ -138,7 +137,7 @@ export class App {
       add.disabled = false;
       mount(preview,
         h("dl", {},
-          h("dt", {}, "Account"), h("dd", { class: "mono" }, `${accountPath(parsed)} (P2WPKH)`),
+          h("dt", {}, "Account"), h("dd", { class: "mono", id: "preview-path" }, `${accountPath(parsed)} (${SCRIPT_INFO[parsed.script].name})`),
           h("dt", {}, "Master fingerprint"), h("dd", { class: "mono" }, parsed.fingerprint || "none yet")),
         ...parsed.warnings.map((w) => notice("warn", w)),
         parsed.fingerprint ? null : notice("warn", "Without the master fingerprint this account is watch-only: you'll see its balance and history, but can't build transactions until you add it. The signer shows it with the public key."),
@@ -164,7 +163,7 @@ export class App {
           form.network = id;
           check();
         } }), info.name)),
-      h("label", { for: "key" }, "Descriptor or zpub"), key,
+      h("label", { for: "key" }, "Descriptor, zpub or ypub"), key,
       h("label", { for: "fingerprint" }, "Master fingerprint (a descriptor already has it)"), fp,
       h("label", { for: "label" }, "Name"), label,
       preview,
@@ -586,6 +585,7 @@ export class App {
 
   settingsView() {
     const a = this.account, r = this.record;
+    const slip132 = accountSlip132(a);
     const gap = h("input", { id: "gap", type: "number", min: "1", max: "1000", value: String(r.gapLimit) });
     const name = h("input", { id: "rename", type: "text", value: r.label });
     const message = h("div", {});
@@ -618,7 +618,7 @@ export class App {
         h("dl", {},
           h("dt", {}, "Path"), h("dd", { class: "mono" }, accountPath(a)),
           h("dt", {}, "Fingerprint"), h("dd", { class: "mono" }, a.fingerprint || "none"),
-          h("dt", {}, a.coinType === 0 ? "zpub" : "vpub"), h("dd", { class: "mono" }, serializeXpub(a.node, a.coinType === 0 ? "zpub" : "vpub")),
+          h("dt", {}, slip132.name), h("dd", { class: "mono" }, slip132.key),
           h("dt", {}, "Descriptor"), h("dd", { class: "mono", id: "descriptor" }, accountDescriptor(a))),
         forget),
       h("div", { class: "panel" }, h("h2", {}, "Server"),

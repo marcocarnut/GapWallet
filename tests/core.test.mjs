@@ -4,11 +4,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { Chain, ZPUB0, MASTER_FINGERPRINT, ZEROGAP, haveSigner, loadSigner } from "./helpers.mjs";
-import { parseAccount, accountDescriptor, descriptorChecksum, ImportError } from "../src/descriptor.js";
+import { parseAccount, accountDescriptor, accountSlip132, descriptorChecksum, ImportError } from "../src/descriptor.js";
 import { addressAt } from "../src/account.js";
 import { Esplora, EsploraError, OWN_INTERVAL_MS, PRESETS, PUBLIC_INTERVAL_MS, parseServer } from "../src/esplora.js";
 import { scanAccount } from "../src/scan.js";
-import { cleanEstimates, selectCoins, vsizeOf, feeFor, feeWarnings, MIN_RATE, SelectError } from "../src/coinselect.js";
+import { cleanEstimates, selectCoins, vsizeOf, feeFor, feeWarnings, KINDS, MIN_RATE, SelectError } from "../src/coinselect.js";
 import { buildSpend, psbtBytes, BuildError, SEQUENCE_RBF } from "../src/build.js";
 import { readSigned } from "../src/signed.js";
 import { toHex, fromHex } from "../vendor/zerogap/psbt/bytes.js";
@@ -82,7 +82,9 @@ test("imports refused", () => {
   refuse(serializeXpub(parseXpub(ZPUB0).node, "xpub"), "mainnet", /descriptor/);
   refuse(d.replace("84h/0h/0h", "84h/0h/1h").replace(/#.*/, ""), "mainnet", /origin/);
   refuse(d.replace("<0;1>", "0").replace(/#.*/, ""), "mainnet", /one chain/);
-  refuse(`sh(${d.replace(/#.*/, "")})`, "mainnet", /wpkh/);
+  refuse(`sh(${d.replace(/#.*/, "")})`, "mainnet", /origin should be 49h/);
+  refuse(d.replace("wpkh(", "pkh(").replace(/#.*/, ""), "mainnet", /wpkh/);
+  refuse(`wsh(${d.replace(/#.*/, "")})`, "mainnet", /wpkh/);
   refuse(ZPUB0, "mainnet", /8 hexadecimal/, "xyz");
   refuse(d, "mainnet", /isn't the one/, "00000000");
   const shallow = { ...parseXpub(ZPUB0).node, depth: 2 };
@@ -507,4 +509,102 @@ test("failures together slow the pace once, and successes bring it back", () => 
   assert.equal(c.interval, 400);
   for (let i = 0; i < 200; i++) c.succeeded();
   assert.equal(c.interval, 100);
+});
+
+const NESTED = "m/49'/1'/0'";
+async function nestedAccount() {
+  const s = await loadSigner();
+  const node = s.bip32.neuter(s.bip32.derive(s.master, NESTED));
+  return { s, account: parseAccount(s.bip32.serializeXpub(node, "upub"), "signet", s.bip32.fingerprintHex(s.master)) };
+}
+
+test("BIP-49 address from the upub", () => {
+  const V = JSON.parse(readFileSync(`${ZEROGAP}/tests/signer/vectors.json`, "utf8")).bip49;
+  const a = parseAccount(V.xpub, "signet", MASTER_FINGERPRINT);
+  assert.equal(a.script, "p2sh-p2wpkh");
+  assert.equal(a.purpose, 49);
+  const got = addressAt(a, 0, 0);
+  assert.equal(got.address, V.address);
+  assert.equal(toHex(got.pubkey), V.pubkey);
+  assert.equal(got.path, V.path);
+  assert.equal(got.redeemScript.length, 22);
+  assert.equal(got.script.length, 23);
+});
+
+test("nested descriptor round trip", () => {
+  const V = JSON.parse(readFileSync(`${ZEROGAP}/tests/signer/vectors.json`, "utf8")).bip49;
+  const a = parseAccount(V.xpub, "signet", MASTER_FINGERPRINT);
+  const d = accountDescriptor(a);
+  assert.match(d, /^sh\(wpkh\(\[73c5da0a\/49h\/1h\/0h\]tpub.*\/<0;1>\/\*\)\)#[a-z0-9]{8}$/);
+  const b = parseAccount(d, "signet");
+  assert.equal(b.script, "p2sh-p2wpkh");
+  assert.equal(addressAt(b, 1, 3).address, addressAt(a, 1, 3).address);
+  assert.equal(accountSlip132(b).key, V.xpub);
+  assert.equal(accountSlip132(b).name, "upub");
+  assert.throws(() => parseAccount(V.xpub, "mainnet"), /test network/);
+  // a nested key's origin can't claim another purpose
+  assert.throws(() => parseAccount(d.replace("49h", "84h").replace(/#.*/, ""), "signet"), /origin should be 49h/);
+});
+
+test("sizes of nested inputs", () => {
+  assert.equal(vsizeOf(1, [22, 23], KINDS["p2sh-p2wpkh"]), 165); // 658 WU: 42 + 364 + 124 + 128
+  const coins = [coin(100000, 1)];
+  const s = selectCoins({ coins, amount: 20000, scripts: [22], rate: 2, kind: KINDS["p2sh-p2wpkh"] });
+  assert.equal(s.fee, 2 * 165);
+  // change between P2WPKH's dust limit and P2SH's goes to the fee: a P2SH change output would be dust
+  const fee = feeFor(165, 1);
+  const near = selectCoins({ coins, amount: 100000 - fee - 400, scripts: [22], rate: 1, kind: KINDS["p2sh-p2wpkh"] });
+  assert.equal(near.change, 0);
+});
+
+for (const previous of [true, false]) {
+  test(`nested segwit through the real signer (previous transactions ${previous ? "in" : "left out"})`, { skip: !haveSigner && "no zerogap repository" }, async () => {
+    const { s, account } = await nestedAccount();
+    const chain = new Chain("signet");
+    chain.fund(addressAt(account, 0, 0).address, 60000);
+    chain.fund(addressAt(account, 0, 1).address, 70000);
+    const c = client(chain);
+    const scan = await scanAccount(account, c, { gapLimit: 5 });
+    const spend = await buildSpend(account, scan, { address: PAYEE, amount: 100000, rate: 3 }, c);
+    assert.equal(spend.inputs.length, 2);
+    assert.notEqual(spend.txid, spend.unsignedTxid);
+
+    const bytes = psbtBytes(account, spend, { includePrevious: previous });
+    const psbt = s.psbtLib.parsePsbt(bytes);
+    assert.ok(psbt.inputs.every((m) => m.fields.redeemScript?.length === 22));
+    const change = spend.outputs.findIndex((o) => o.change);
+    assert.equal(psbt.outputs[change].fields.redeemScript.length, 22);
+    assert.equal(spend.outputs[change].change.path, "m/49'/1'/0'/1/0");
+
+    const plan = s.sign.plan(psbt, s.master, { network: "testnet" });
+    assert.ok(plan.inputs.every((i) => i.sign), JSON.stringify(plan.inputs.map((i) => i.reason)));
+    assert.equal(plan.outputs[change].ours, true);
+    assert.equal(plan.outputs[change].role, "change");
+    assert.equal(plan.outputs[change].problem, null);
+
+    const done = s.sign.finalize(s.sign.signPsbt(psbt, s.master, { network: "testnet" }).psbt);
+    assert.equal(done.txid, spend.txid, "the finished txid was known before signing");
+    assert.ok(done.vsize <= spend.vsize && spend.vsize - done.vsize <= 2, `estimated ${spend.vsize}, real ${done.vsize}`);
+
+    const got = readSigned(s.transport.electrumQrText(done.tx), null, spend);
+    assert.equal(got.matches, true);
+    assert.equal(readSigned(electrumQrText(bytes), null, spend).matches, true); // the unsigned PSBT is recognised too
+  });
+}
+
+test("a nested transaction with another scriptSig isn't the one built", { skip: !haveSigner && "no zerogap repository" }, async () => {
+  const { s, account } = await nestedAccount();
+  const chain = new Chain("signet");
+  chain.fund(addressAt(account, 0, 0).address, 60000);
+  const c = client(chain);
+  const scan = await scanAccount(account, c, { gapLimit: 5 });
+  const spend = await buildSpend(account, scan, { address: PAYEE, amount: 20000, rate: 3 }, c);
+  const psbt = s.psbtLib.parsePsbt(psbtBytes(account, spend));
+  const done = s.sign.finalize(s.sign.signPsbt(psbt, s.master, { network: "testnet" }).psbt);
+  const tx = parseTx(done.tx);
+  tx.inputs[0].scriptSig = Uint8Array.from(tx.inputs[0].scriptSig).map((b, i) => (i === 5 ? b ^ 1 : b));
+  assert.equal(readSigned(toHex(serializeTx(tx)), null, spend).matches, false);
+  // and an unsigned one with its scriptSig filled in isn't signed
+  tx.inputs[0].witness = [];
+  assert.throws(() => readSigned(toHex(serializeTx(tx)), null, spend), /isn't signed/);
 });

@@ -16,7 +16,7 @@ your own).
 **To use it:** open `gapwallet.html`, from disk or any web server. There is
 nothing to install.
 
-1. Add an account: a descriptor, or a zpub with its master fingerprint. The
+1. Add an account: a descriptor, or a zpub or ypub with its master fingerprint. The
    page shows the first addresses before contacting anything: compare them
    with your signer.
 2. Choose a server. There is no default, because the server learns every
@@ -26,10 +26,11 @@ nothing to install.
 
 ## Status
 
-Milestone W1 of the plan in zerogap's `docs/plans/BITCOIN.md`.
+Milestone W1, and the first part of W3, of the plan in zerogap's
+`docs/plans/BITCOIN.md`.
 
-- P2WPKH accounts only (`wpkh(…)`, zpub, vpub); nested segwit, legacy and
-  multisig are W3.
+- P2WPKH (`wpkh(…)`, zpub, vpub) and P2SH-P2WPKH (`sh(wpkh(…))`, ypub, upub)
+  accounts. Legacy and multisig are the rest of W3.
 - Mainnet, signet and testnet4.
 - PSBTs go out as one Electrum Base43 QR code. BBQr, and animated codes, are W2.
 - One recipient per transaction.

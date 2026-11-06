@@ -6,16 +6,23 @@
 import { compactSizeLength } from "../vendor/zerogap/psbt/bytes.js";
 
 export const MIN_RATE = 0.1, MAX_RATE = 10000;
-export const CHANGE_SCRIPT = 22; // P2WPKH
 export const DUST = { p2wpkh: 294, p2sh: 540, p2pkh: 546, p2wsh: 330, p2tr: 330 };
 
-const INPUT_WEIGHT = 272; // 41 × 4, and a witness of 1 + (1 + 72) + (1 + 33): a signature's 71 bytes and the sighash byte
+// What an account's script type costs. A witness is 108 WU: 1 + (1 + 72) + (1 + 33),
+// a signature's 71 bytes and the sighash byte. An input's fixed part is 41 bytes;
+// P2SH-P2WPKH adds a scriptSig of 23.
+export const KINDS = {
+  p2wpkh: { inputWeight: 41 * 4 + 108, changeScript: 22, changeDust: DUST.p2wpkh },
+  "p2sh-p2wpkh": { inputWeight: (41 + 23) * 4 + 108, changeScript: 23, changeDust: DUST.p2sh },
+};
+
 const outputWeight = (scriptLength) => 4 * (8 + compactSizeLength(scriptLength) + scriptLength);
 
-// A P2WPKH-input transaction's size; `scripts`: its output scripts' lengths.
-export function vsizeOf(inputs, scripts) {
+// The size of a transaction with `inputs` inputs of this kind; `scripts`: its
+// output scripts' lengths.
+export function vsizeOf(inputs, scripts, kind = KINDS.p2wpkh) {
   const base = 4 * (4 + 4 + compactSizeLength(inputs) + compactSizeLength(scripts.length)) + 2; // version, locktime, counts, segwit marker
-  const weight = base + inputs * INPUT_WEIGHT + scripts.reduce((sum, n) => sum + outputWeight(n), 0);
+  const weight = base + inputs * kind.inputWeight + scripts.reduce((sum, n) => sum + outputWeight(n), 0);
   return Math.ceil(weight / 4);
 }
 
@@ -45,12 +52,12 @@ export class SelectError extends Error {
 const byValue = (a, b) => a.value - b.value || (a.txid < b.txid ? -1 : a.txid > b.txid ? 1 : a.vout - b.vout);
 
 // With these inputs: { inputs, change, fee, dropped (to the fee, satoshis), vsize }, or null if they fall short.
-function settle(inputs, amount, scripts, rate) {
+function settle(inputs, amount, scripts, rate, kind) {
   const total = inputs.reduce((sum, c) => sum + c.value, 0);
-  const withChange = vsizeOf(inputs.length, [...scripts, CHANGE_SCRIPT]);
+  const withChange = vsizeOf(inputs.length, [...scripts, kind.changeScript], kind);
   const change = total - amount - feeFor(withChange, rate);
-  if (change >= DUST.p2wpkh) return { inputs, change, fee: total - amount - change, dropped: 0, vsize: withChange };
-  const vsize = vsizeOf(inputs.length, scripts);
+  if (change >= kind.changeDust) return { inputs, change, fee: total - amount - change, dropped: 0, vsize: withChange };
+  const vsize = vsizeOf(inputs.length, scripts, kind);
   const fee = feeFor(vsize, rate);
   if (total < amount + fee) return null;
   return { inputs, change: 0, fee: total - amount, dropped: total - amount - fee, vsize };
@@ -58,49 +65,50 @@ function settle(inputs, amount, scripts, rate) {
 
 // request: { coins (Coin[]), amount (satoshis; ignored by sendAll), scripts
 // (the payments' script lengths), rate, manual (spend exactly `coins`),
-// sendAll } -> settle()'s, plus `amount`, `skipped` (coins worth less than
+// sendAll, kind (of KINDS: the account's) } -> settle()'s, plus `amount`, `skipped` (coins worth less than
 // they cost to spend).
-export function selectCoins({ coins, amount, scripts, rate, manual = false, sendAll = false }) {
+export function selectCoins({ coins, amount, scripts, rate, manual = false, sendAll = false, kind = KINDS.p2wpkh }) {
   if (coins.length === 0) throw new SelectError(manual ? "Choose at least one coin." : "There are no coins to spend.");
   if (sendAll) {
     const usable = manual ? coins : coins.filter((c) => c.confirmed);
     if (usable.length === 0) throw new SelectError("There are no confirmed coins yet.");
     const total = usable.reduce((sum, c) => sum + c.value, 0);
-    const vsize = vsizeOf(usable.length, scripts);
+    const vsize = vsizeOf(usable.length, scripts, kind);
     const fee = feeFor(vsize, rate);
     if (total - fee <= 0) throw new SelectError("These coins don't cover the fee at this rate.");
     return { inputs: usable, change: 0, fee, dropped: 0, vsize, amount: total - fee, skipped: 0 };
   }
   if (manual) {
-    const got = settle(coins, amount, scripts, rate);
+    const got = settle(coins, amount, scripts, rate, kind);
     if (!got) throw new SelectError("The coins you chose don't cover the amount and the fee.");
     return { ...got, amount, skipped: 0 };
   }
 
   const unconfirmed = coins.filter((c) => !c.confirmed).reduce((sum, c) => sum + c.value, 0);
-  const inputCost = feeFor(INPUT_WEIGHT / 4, rate);
+  const inputCost = feeFor(kind.inputWeight / 4, rate);
   const confirmed = coins.filter((c) => c.confirmed);
   const worth = confirmed.filter((c) => c.value > inputCost).sort(byValue);
   const skipped = confirmed.length - worth.length;
   const done = (got) => ({ ...got, amount, skipped });
 
   // 1. One coin, close enough that change wouldn't pay for itself
-  const changeCost = feeFor(vsizeOf(1, [...scripts, CHANGE_SCRIPT]), rate) - feeFor(vsizeOf(1, scripts), rate);
+  const single = vsizeOf(1, scripts, kind);
+  const changeCost = feeFor(vsizeOf(1, [...scripts, kind.changeScript], kind), rate) - feeFor(single, rate);
   for (const c of worth) {
-    const fee = feeFor(vsizeOf(1, scripts), rate);
+    const fee = feeFor(single, rate);
     const excess = c.value - amount - fee;
-    if (excess >= 0 && excess <= changeCost) return done({ inputs: [c], change: 0, fee: fee + excess, dropped: excess, vsize: vsizeOf(1, scripts) });
+    if (excess >= 0 && excess <= changeCost) return done({ inputs: [c], change: 0, fee: fee + excess, dropped: excess, vsize: single });
   }
   // 2. The smallest coin that covers it
   for (const c of worth) {
-    const got = settle([c], amount, scripts, rate);
+    const got = settle([c], amount, scripts, rate, kind);
     if (got) return done(got);
   }
   // 3. The largest coins, one by one
   const inputs = [];
   for (const c of [...worth].reverse()) {
     inputs.push(c);
-    const got = settle([...inputs], amount, scripts, rate);
+    const got = settle([...inputs], amount, scripts, rate, kind);
     if (got) return done(got);
   }
   const held = unconfirmed > 0 ? ` Another ${unconfirmed} sat is unconfirmed: choose those coins by hand to spend them.` : "";

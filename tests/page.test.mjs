@@ -346,6 +346,59 @@ test("start to end: scan, receive, build, real signer, camera, broadcast", { ski
   await ctx.close();
 });
 
+test("a nested segwit account, through the page and the real signer", { skip }, async () => {
+  chain = new Chain("signet");
+  const upub = signer.bip32.serializeXpub(signer.bip32.neuter(signer.bip32.derive(signer.master, "m/49'/1'/0'")), "upub");
+  const a = parseAccount(upub, "signet", MASTER_FINGERPRINT);
+  chain.fund(addressAt(a, 0, 0).address, 90000);
+  const { page, ctx, seen } = await open();
+  await click(page, "input[value=signet]");
+  await page.type("#key", upub);
+  await hasText(page, "m/49'/1'/0' (P2SH-P2WPKH)");
+  await hasText(page, addressAt(a, 0, 0).address);
+  await page.type("#fingerprint", MASTER_FINGERPRINT);
+  await page.waitForFunction(() => !document.getElementById("add").disabled);
+  await Promise.all([page.waitForNavigation(), click(page, "#add")]);
+  await chooseServer(page);
+  await page.waitForSelector("#balance");
+  assert.equal(await text(page, "#balance"), "0.00090000 BTC");
+
+  await click(page, "#tab-receive");
+  await page.waitForSelector("#receive-address");
+  assert.equal(await text(page, "#receive-address"), addressAt(a, 0, 1).address);
+
+  await click(page, "#tab-send");
+  await page.waitForSelector("#address");
+  await hasText(page, "about an hour");
+  await page.type("#address", PAYEE);
+  await page.type("#amount", "0.0002");
+  await click(page, "#review");
+  await page.waitForSelector("#review-amount");
+  await hasText(page, "m/49'/1'/0'/1/0");
+  await click(page, "#to-sign");
+  await page.waitForSelector("#psbt-qr");
+  await page.$eval("details", (e) => { e.open = true; });
+  const psbt = signer.psbtLib.parsePsbt(fromBase64(await page.$eval("#psbt-text", (e) => e.value)));
+  const plan = signer.sign.plan(psbt, signer.master, { network: "testnet" });
+  assert.equal(plan.signable, 1);
+  assert.equal(plan.outputs.filter((o) => o.ours && o.role === "change").length, 1);
+  const done = signer.sign.finalize(signer.sign.signPsbt(psbt, signer.master, { network: "testnet" }).psbt);
+
+  await click(page, "#to-scan");
+  await page.waitForSelector("#signed");
+  await page.$eval("#signed", (e, v) => { e.value = v; }, signer.transport.electrumQrText(done.tx));
+  await click(page, "#read-pasted");
+  await hasText(page, "This is the transaction built here, signed.");
+  assert.equal(await text(page, "#signed-txid"), done.txid);
+
+  await click(page, "#tab-settings");
+  await page.waitForSelector("#descriptor");
+  assert.match(await text(page, "#descriptor"), /^sh\(wpkh\(\[73c5da0a\/49h\/1h\/0h\]tpub/);
+  await hasText(page, upub);
+  assert.deepEqual(seen.errors, []);
+  await ctx.close();
+});
+
 test("a transaction other than the one built needs an explicit yes; a big PSBT's choice is explicit", { skip }, async () => {
   chain = new Chain("signet");
   const a = account();
