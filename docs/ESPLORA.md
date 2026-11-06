@@ -245,6 +245,9 @@ choice, each time; it is never dropped silently.
   comes round. BBQr's text is also Base43's, so `B$…` is BBQr unless it reads
   as a transaction, as in the signer. A code from another series starts that
   one over; a damaged series is dropped, with a message, and read again.
+- **Files**, for work without cameras: the PSBT saves as a `.psbt` file, and a
+  file can hold what a code can (hex, Base64, Base43, BBQr lines) or the raw
+  bytes of a transaction or PSBT. A file goes through the same checks as a code.
 - **Public keys** may also be read with the camera: a descriptor, zpub or ypub
   as plain text, or BBQr of type `U`. What a code holds appears on the screen
   only if it is a public key, in case a seed's code is shown by mistake.

@@ -23,7 +23,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-mgjLc/6yeWCPGArowbgjwMDbtpKfH5Am9VKgn6dyXlM='; style-src 'sha256-oD+w28p530ZeCs15xtEYkn7okqLYC9mMEsSY9OOYKiQ='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Xdrt848RjVxqUPn3kVtqjKoq+++0ZwmAqytTdfSgJCQ='; style-src 'sha256-8RKkCe1K1ezazRjHwMgQxI+dGZBVWQRrwU6EXiT09gc='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GapWallet</title>
@@ -80,6 +80,7 @@ input[type=text], input[type=number], textarea, select {
   width: 100%; padding: 8px 10px; font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
 }
 select { width: auto; max-width: 240px; }
+input[type=file] { font-size: 14px; color: var(--dim); }
 textarea { min-height: 90px; resize: vertical; }
 input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
@@ -6649,6 +6650,8 @@ __exports["BBQrError"] = BBQrError; __exports["partCapacity"] = partCapacity; __
 //                                     | { kind: "partial", signed, total, matches }
 //   new SignedReader(pending).add(text, bytes)
 //     -> the same, or { kind: "progress", have, total } for a part of a BBQr series
+//   readFile(bytes, pending) -> the same as readSigned: a file holding a raw
+//     transaction, a PSBT, or their text forms (hex, Base64, Base43, BBQr lines)
 //
 // Throws DecodeError with a message for people. A finished transaction with
 // the expected txid is the one we built, signed: a segwit txid doesn't
@@ -6658,7 +6661,7 @@ __exports["BBQrError"] = BBQrError; __exports["partCapacity"] = partCapacity; __
 // SPDX-License-Identifier: GPL-3.0-or-later
 const { toHex, DecodeError } = __mod("vendor/zerogap/psbt/bytes.js");
 const { readPayload } = __mod("vendor/zerogap/psbt/transport.js");
-const { parsePsbt } = __mod("vendor/zerogap/psbt/psbt.js");
+const { isPsbt, parsePsbt } = __mod("vendor/zerogap/psbt/psbt.js");
 const { parseTx, txid: txidOf, serializeTx } = __mod("vendor/zerogap/psbt/tx.js");
 const { BBQrError, FILE_TYPES, Joiner, isBBQr } = __mod("vendor/zerogap/bbqr.js");
 
@@ -6734,6 +6737,31 @@ class SignedReader {
   }
 }
 
+const isText = (bytes) => bytes.every((b) => b === 9 || b === 10 || b === 13 || (b >= 32 && b < 127));
+
+// The same checks as a code, from a file's bytes.
+function readFile(bytes, pending) {
+  if (bytes.length === 0) throw new DecodeError("The file is empty.");
+  if (bytes.length > MAX_FILE) throw new DecodeError("The file is too big to be a transaction.");
+  if (isPsbt(bytes)) return psbtResult(bytes, pending);
+  if (!isText(bytes)) {
+    try {
+      return txResult(bytes, pending);
+    } catch (e) {
+      if (!(e instanceof DecodeError)) throw e;
+      throw new DecodeError(`This file isn't a transaction: ${e.message}`);
+    }
+  }
+  const lines = new TextDecoder().decode(bytes).split(/\s+/).filter(Boolean);
+  if (lines.length === 0) throw new DecodeError("The file is empty.");
+  if (lines.length === 1 || !lines.every(isBBQr)) return readSigned(lines.join(""), null, pending);
+  const reader = new SignedReader(pending);
+  let got;
+  for (const line of lines) got = reader.add(line);
+  if (got.kind === "progress") throw new DecodeError(`This file has ${got.have} of the series' ${got.total} codes.`);
+  return got;
+}
+
 // A public key read from a code: its text, whole or from a BBQr series of
 // text. -> { text } or { have, total } while a series is coming in. Throws
 // DecodeError.
@@ -6759,7 +6787,7 @@ class KeyReader {
   }
 }
 
-__exports["readSigned"] = readSigned; __exports["SignedReader"] = SignedReader; __exports["KeyReader"] = KeyReader;
+__exports["readSigned"] = readSigned; __exports["SignedReader"] = SignedReader; __exports["readFile"] = readFile; __exports["KeyReader"] = KeyReader;
 }
 
 // ======== vendor/qrcode-generator/qrcode.mjs ========
@@ -19258,7 +19286,7 @@ const { Esplora, EsploraError, PRESETS, parseServer } = __mod("src/esplora.js");
 const { DEFAULT_GAP, scanAccount } = __mod("src/scan.js");
 const { MIN_RATE, MAX_RATE, cleanEstimates, feeWarnings } = __mod("src/coinselect.js");
 const { BuildError, buildSpend, psbtBytes } = __mod("src/build.js");
-const { KeyReader, SignedReader } = __mod("src/signed.js");
+const { KeyReader, SignedReader, readFile } = __mod("src/signed.js");
 const { MAX_ALPHANUMERIC, Scanner, drawQr, makeQr } = __mod("src/qr.js");
 const { parseBtc, formatBtc } = __mod("src/amount.js");
 const { save } = __mod("src/store.js");
@@ -19775,7 +19803,7 @@ class App {
       h("textarea", { id: "psbt-text", readonly: true }, b64),
       h("div", { class: "row" },
         h("button", { class: "small", onclick: () => copyText(b64) }, "Copy Base64"),
-        h("button", { class: "small", onclick: () => download(bytes, `${send.spend.txid.slice(0, 8)}.psbt`) }, "Save .psbt"))),
+        h("button", { id: "save-psbt", class: "small", onclick: () => download(bytes, `${send.spend.txid.slice(0, 8)}.psbt`) }, "Save .psbt"))),
     h("div", { class: "row" }, h("button", { onclick: () => this.go("review") }, "Back"),
       h("button", { id: "to-scan", class: "primary", onclick: () => this.go("scan") }, "It's signed: read it back")));
     return h("div", {}, ...parts);
@@ -19864,10 +19892,11 @@ class App {
     const pasted = h("textarea", { id: "signed", spellcheck: "false", placeholder: "Or paste the signed transaction: hex, Base64 or Base43" });
     const video = h("video", { muted: true, playsinline: true, id: "camera", hidden: true });
     const reader = new SignedReader(send.spend);
-    const accept = (code) => {
+    // Camera, paste and file all end here, with the same checks.
+    const settle = (read) => {
       let got;
       try {
-        got = reader.add(code.text, code.bytes);
+        got = read();
       } catch (e) {
         if (e instanceof RangeError) throw e;
         send.signed = null;
@@ -19888,6 +19917,14 @@ class App {
       this.stopCamera();
       this.showSigned(result);
     };
+    const accept = (code) => settle(() => reader.add(code.text, code.bytes));
+    const file = h("input", { id: "signed-file", type: "file", accept: ".txn,.tx,.hex,.psbt,.txt", onchange: async () => {
+      const chosen = file.files[0];
+      if (!chosen) return;
+      const bytes = new Uint8Array(await chosen.arrayBuffer());
+      file.value = ""; // the same file can be chosen again
+      settle(() => readFile(bytes, send.spend));
+    } });
     const start = h("button", { id: "start-camera", onclick: () => {
       start.disabled = true;
       video.hidden = false;
@@ -19904,6 +19941,7 @@ class App {
         // a series pasted as lines: each line is one code
         for (const line of pasted.value.split(/\s+/).filter(Boolean)) accept({ text: line, bytes: null });
       } }, "Read")),
+      h("label", { for: "signed-file" }, "Or open a file"), file,
       result,
       h("div", { class: "row" }, h("button", { onclick: () => this.go("show") }, "Back")));
   }

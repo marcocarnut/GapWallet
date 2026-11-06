@@ -9,7 +9,7 @@ import { Esplora, EsploraError, PRESETS, parseServer } from "./esplora.js";
 import { DEFAULT_GAP, scanAccount } from "./scan.js";
 import { MIN_RATE, MAX_RATE, cleanEstimates, feeWarnings } from "./coinselect.js";
 import { BuildError, buildSpend, psbtBytes } from "./build.js";
-import { KeyReader, SignedReader } from "./signed.js";
+import { KeyReader, SignedReader, readFile } from "./signed.js";
 import { MAX_ALPHANUMERIC, Scanner, drawQr, makeQr } from "./qr.js";
 import { parseBtc, formatBtc } from "./amount.js";
 import { save } from "./store.js";
@@ -526,7 +526,7 @@ export class App {
       h("textarea", { id: "psbt-text", readonly: true }, b64),
       h("div", { class: "row" },
         h("button", { class: "small", onclick: () => copyText(b64) }, "Copy Base64"),
-        h("button", { class: "small", onclick: () => download(bytes, `${send.spend.txid.slice(0, 8)}.psbt`) }, "Save .psbt"))),
+        h("button", { id: "save-psbt", class: "small", onclick: () => download(bytes, `${send.spend.txid.slice(0, 8)}.psbt`) }, "Save .psbt"))),
     h("div", { class: "row" }, h("button", { onclick: () => this.go("review") }, "Back"),
       h("button", { id: "to-scan", class: "primary", onclick: () => this.go("scan") }, "It's signed: read it back")));
     return h("div", {}, ...parts);
@@ -615,10 +615,11 @@ export class App {
     const pasted = h("textarea", { id: "signed", spellcheck: "false", placeholder: "Or paste the signed transaction: hex, Base64 or Base43" });
     const video = h("video", { muted: true, playsinline: true, id: "camera", hidden: true });
     const reader = new SignedReader(send.spend);
-    const accept = (code) => {
+    // Camera, paste and file all end here, with the same checks.
+    const settle = (read) => {
       let got;
       try {
-        got = reader.add(code.text, code.bytes);
+        got = read();
       } catch (e) {
         if (e instanceof RangeError) throw e;
         send.signed = null;
@@ -639,6 +640,14 @@ export class App {
       this.stopCamera();
       this.showSigned(result);
     };
+    const accept = (code) => settle(() => reader.add(code.text, code.bytes));
+    const file = h("input", { id: "signed-file", type: "file", accept: ".txn,.tx,.hex,.psbt,.txt", onchange: async () => {
+      const chosen = file.files[0];
+      if (!chosen) return;
+      const bytes = new Uint8Array(await chosen.arrayBuffer());
+      file.value = ""; // the same file can be chosen again
+      settle(() => readFile(bytes, send.spend));
+    } });
     const start = h("button", { id: "start-camera", onclick: () => {
       start.disabled = true;
       video.hidden = false;
@@ -655,6 +664,7 @@ export class App {
         // a series pasted as lines: each line is one code
         for (const line of pasted.value.split(/\s+/).filter(Boolean)) accept({ text: line, bytes: null });
       } }, "Read")),
+      h("label", { for: "signed-file" }, "Or open a file"), file,
       result,
       h("div", { class: "row" }, h("button", { onclick: () => this.go("show") }, "Back")));
   }

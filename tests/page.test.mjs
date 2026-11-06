@@ -4,7 +4,9 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { Chain, haveSigner, loadSigner, MASTER_FINGERPRINT } from "./helpers.mjs";
 import { addressAt } from "../src/account.js";
 import { accountDescriptor, parseAccount } from "../src/descriptor.js";
@@ -552,6 +554,75 @@ test("W2: a series pasted as lines; a damaged one is said to be", { skip }, asyn
   await hasText(page, "This is the transaction built here, signed.");
   assert.equal(await text(page, "#signed-txid"), done.txid);
   await ctx.close();
+});
+
+test("files: the PSBT saved under the page's policy, signed, and the transaction opened through the same checks", { skip }, async () => {
+  chain = new Chain("signet");
+  chain.fund(addressAt(account(), 0, 0).address, 90000);
+  const { page, ctx, seen } = await open();
+  const dir = mkdtempSync(join(tmpdir(), "gapwallet-"));
+  try {
+    await importAccount(page);
+    await chooseServer(page);
+    await page.waitForSelector("#balance");
+    await click(page, "#tab-send");
+    await page.waitForSelector("#address");
+    await hasText(page, "about an hour");
+    await page.type("#address", PAYEE);
+    await page.type("#amount", "0.0002");
+    await click(page, "#review");
+    await page.waitForSelector("#to-sign");
+    await click(page, "#to-sign");
+    await page.waitForSelector("#psbt-qr");
+    await page.$eval("details", (e) => { e.open = true; });
+    const cdp = await browser.target().createCDPSession();
+    await cdp.send("Browser.setDownloadBehavior", { behavior: "allow", downloadPath: dir, browserContextId: ctx.id, eventsEnabled: true });
+    await click(page, "#save-psbt");
+    let names = [];
+    for (let i = 0; i < 50 && !names.some((n) => n.endsWith(".psbt")); i++) {
+      await new Promise((d) => setTimeout(d, 100));
+      names = readdirSync(dir);
+    }
+    const saved = names.find((n) => n.endsWith(".psbt"));
+    assert.ok(saved, `saved: ${names}`);
+    const bytes = readFileSync(join(dir, saved));
+    assert.equal(toHex(bytes), toHex(fromBase64(await page.$eval("#psbt-text", (e) => e.value))));
+
+    // the saved file goes to the real signer
+    const psbt = signer.psbtLib.parsePsbt(new Uint8Array(bytes));
+    const signedPsbt = signer.sign.signPsbt(psbt, signer.master, { network: "testnet" }).psbt;
+    const done = signer.sign.finalize(signedPsbt);
+
+    await click(page, "#to-scan");
+    await page.waitForSelector("#signed-file");
+    const open_ = async (name, data) => {
+      writeFileSync(join(dir, name), data);
+      const input = await page.$("#signed-file");
+      await input.uploadFile(join(dir, name));
+    };
+    // a file that isn't one; a PSBT not yet finished; another transaction: none goes through
+    await open_("junk.txn", Uint8Array.of(0, 1, 2, 200, 201));
+    await hasText(page, "isn't a transaction");
+    await open_("unsigned.psbt", bytes);
+    await hasText(page, "0 of 1 inputs signed");
+    assert.equal(await page.$("#broadcast"), null);
+    const tampered = Uint8Array.from(done.tx);
+    tampered[tampered.length - 200] ^= 1;
+    await open_("other.txn", tampered);
+    await hasText(page, "isn't the transaction built here");
+    assert.equal(await page.$eval("#broadcast", (e) => e.disabled), true);
+    // the real one, raw, then as hex
+    await open_("signed.txn", done.tx);
+    await hasText(page, "This is the transaction built here, signed.");
+    assert.equal(await text(page, "#signed-txid"), done.txid);
+    assert.equal(await page.$eval("#broadcast", (e) => e.disabled), false);
+    await open_("signed.hex", `${toHex(done.tx)}\n`);
+    await hasText(page, "This is the transaction built here, signed.");
+    assert.deepEqual(seen.errors, []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    await ctx.close();
+  }
 });
 
 test("W2: a public key read with the camera; a seed's code doesn't reach the screen", { skip, timeout: 60000 }, async () => {
