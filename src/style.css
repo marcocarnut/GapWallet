@@ -51,6 +51,7 @@ input[type=text], input[type=number], textarea, select {
   width: 100%; padding: 8px 10px; font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
 }
 select { width: auto; max-width: 240px; }
+input[type=file] { font-size: 14px; color: var(--dim); }
 textarea { min-height: 90px; resize: vertical; }
 input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 

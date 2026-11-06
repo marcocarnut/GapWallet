@@ -4,6 +4,8 @@
 //                                     | { kind: "partial", signed, total, matches }
 //   new SignedReader(pending).add(text, bytes)
 //     -> the same, or { kind: "progress", have, total } for a part of a BBQr series
+//   readFile(bytes, pending) -> the same as readSigned: a file holding a raw
+//     transaction, a PSBT, or their text forms (hex, Base64, Base43, BBQr lines)
 //
 // Throws DecodeError with a message for people. A finished transaction with
 // the expected txid is the one we built, signed: a segwit txid doesn't
@@ -13,7 +15,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { toHex, DecodeError } from "../vendor/zerogap/psbt/bytes.js";
 import { readPayload } from "../vendor/zerogap/psbt/transport.js";
-import { parsePsbt } from "../vendor/zerogap/psbt/psbt.js";
+import { isPsbt, parsePsbt } from "../vendor/zerogap/psbt/psbt.js";
 import { parseTx, txid as txidOf, serializeTx } from "../vendor/zerogap/psbt/tx.js";
 import { BBQrError, FILE_TYPES, Joiner, isBBQr } from "../vendor/zerogap/bbqr.js";
 
@@ -87,6 +89,31 @@ export class SignedReader {
       throw new DecodeError(`This series can't be read, so it was started over: ${e.message}`);
     }
   }
+}
+
+const isText = (bytes) => bytes.every((b) => b === 9 || b === 10 || b === 13 || (b >= 32 && b < 127));
+
+// The same checks as a code, from a file's bytes.
+export function readFile(bytes, pending) {
+  if (bytes.length === 0) throw new DecodeError("The file is empty.");
+  if (bytes.length > MAX_FILE) throw new DecodeError("The file is too big to be a transaction.");
+  if (isPsbt(bytes)) return psbtResult(bytes, pending);
+  if (!isText(bytes)) {
+    try {
+      return txResult(bytes, pending);
+    } catch (e) {
+      if (!(e instanceof DecodeError)) throw e;
+      throw new DecodeError(`This file isn't a transaction: ${e.message}`);
+    }
+  }
+  const lines = new TextDecoder().decode(bytes).split(/\s+/).filter(Boolean);
+  if (lines.length === 0) throw new DecodeError("The file is empty.");
+  if (lines.length === 1 || !lines.every(isBBQr)) return readSigned(lines.join(""), null, pending);
+  const reader = new SignedReader(pending);
+  let got;
+  for (const line of lines) got = reader.add(line);
+  if (got.kind === "progress") throw new DecodeError(`This file has ${got.have} of the series' ${got.total} codes.`);
+  return got;
 }
 
 // A public key read from a code: its text, whole or from a BBQr series of

@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import "./helpers.mjs";
 import { Joiner, split, partCapacity, isBBQr } from "../vendor/zerogap/bbqr.js";
-import { KeyReader, SignedReader } from "../src/signed.js";
+import { KeyReader, SignedReader, readFile } from "../src/signed.js";
 import { makeQr, decodeFrame } from "../src/qr.js";
 import { toHex } from "../vendor/zerogap/psbt/bytes.js";
 import { base43Encode } from "../vendor/zerogap/psbt/basen.js";
@@ -144,4 +144,30 @@ test("all the codes of a series are the version it says, and read back", () => {
     j.add(decodeFrame(rgba, n, n).text);
   }
   assert.equal(toHex(j.result().bytes), toHex(data));
+});
+
+test("a file: raw, hex, Base43, Base64 PSBT, BBQr lines; the same checks as a code", () => {
+  const ascii = (t) => new TextEncoder().encode(t);
+  assert.equal(readFile(bytes, pending).matches, true);
+  assert.equal(readFile(ascii(`${toHex(bytes)}\n`), pending).matches, true);
+  assert.equal(readFile(ascii(`\n  ${base43Encode(bytes)}  \r\n`), pending).matches, true);
+  const { parts } = split(bytes, "T", { encoding: "2", maxParts: 4, minVersion: 3 });
+  assert.ok(parts.length > 1);
+  assert.equal(readFile(ascii([...parts].reverse().join("\n")), pending).matches, true);
+  assert.throws(() => readFile(ascii(parts.slice(1).join("\n")), pending), /of the series/);
+
+  // another transaction isn't taken for this one
+  const other = structuredClone(TX);
+  other.outputs[0].value++;
+  assert.equal(readFile(serializeTx(other), pending).matches, false);
+  // unsigned is unsigned
+  const bare = structuredClone(TX);
+  bare.inputs[0].witness = [];
+  assert.throws(() => readFile(serializeTx(bare, { withWitness: false }), pending), /isn't signed/);
+
+  assert.throws(() => readFile(new Uint8Array(0), pending), /empty/);
+  assert.throws(() => readFile(ascii("  \n"), pending), /empty/);
+  assert.throws(() => readFile(Uint8Array.of(0, 1, 2, 200, 201), pending), /isn't a transaction/);
+  assert.throws(() => readFile(ascii("hello there"), pending), /./);
+  assert.throws(() => readFile(new Uint8Array(4 * 1024 * 1024 + 1), pending), /too big/);
 });

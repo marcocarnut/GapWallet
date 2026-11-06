@@ -22,7 +22,8 @@ nothing to install.
 2. Choose a server. There is no default, because the server learns every
    address you ask about (Settings says exactly what each party learns).
 3. Send: fill in the details, review, read the code with the signer, then read
-   the signed transaction back with the webcam, or paste it, and broadcast.
+   the signed transaction back with the webcam, paste it or open a file, and
+   broadcast. The PSBT can be saved as a file too, for signers without a camera.
 
 ## Status
 
@@ -43,6 +44,7 @@ Milestones W1 and W2, and the first part of W3, of the plan in zerogap's
 | --- | --- |
 | `gapwallet.html` | The program: built, unminified. |
 | `docs/ESPLORA.md` | W0: the requests it makes, how it scans, fees, coins, privacy. Written before the code. |
+| `docs/E1.md` | The end-to-end test plan: the simulator, cameras, signet, bitcoind, Electrum. |
 | `tests/fixtures/bbqr-real-scan.txt` | A real scan's BBQr codes, from the BBQr project (public domain; provenance in `tests/bbqr.test.mjs`). |
 | `src/` | The wallet: `descriptor.js` (imports), `account.js` (addresses), `esplora.js` (the client), `scan.js`, `coinselect.js`, `build.js` (transactions and PSBTs), `signed.js` (what comes back), `qr.js`, `ui.js`. |
 | `vendor/` | Libraries, byte for byte, with origins and hashes in `vendor/MANIFEST.json`. Never edited by hand. |
