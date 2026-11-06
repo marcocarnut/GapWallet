@@ -1,0 +1,178 @@
+[
+ {
+  "file": "zerogap/bip32.js",
+  "sha256": "6f56f374719208ebc795285e983c74552546b55de6050671cd726f7bcf783fc4",
+  "from": "zerogap",
+  "commit": "99248ea191d7acab3212d2b5b9ec035c7c190a5c",
+  "path": "apps/signer/lib/bip32.js",
+  "license": "GPL-3.0-or-later"
+ },
+ {
+  "file": "zerogap/crypto.js",
+  "sha256": "295d252d0f1dad7083b59fd3b165ee25f95d642d936b339bd805af5ab7cdb538",
+  "from": "zerogap",
+  "commit": "99248ea191d7acab3212d2b5b9ec035c7c190a5c",
+  "path": "apps/signer/lib/crypto.js",
+  "license": "GPL-3.0-or-later"
+ },
+ {
+  "file": "zerogap/psbt/basen.js",
+  "sha256": "8a469f7af07756fb62605132c3f447c5056628c1a4f2e6c49922e01d62e366ce",
+  "from": "zerogap",
+  "commit": "99248ea191d7acab3212d2b5b9ec035c7c190a5c",
+  "path": "apps/psbtview/lib/basen.js",
+  "license": "GPL-3.0-or-later"
+ },
+ {
+  "file": "zerogap/psbt/bech32.js",
+  "sha256": "6df4b0c32f260caa7c5c3a94885dfb4d23df9b08ba9ee47a136bd68bef150400",
+  "from": "zerogap",
+  "commit": "99248ea191d7acab3212d2b5b9ec035c7c190a5c",
+  "path": "apps/psbtview/lib/bech32.js",
+  "license": "GPL-3.0-or-later"
+ },
+ {
+  "file": "zerogap/psbt/bytes.js",
+  "sha256": "eff18042156fc5d11be8c60fa4cf75edc187205337c9cd534244511ea92f7f8e",
+  "from": "zerogap",
+  "commit": "99248ea191d7acab3212d2b5b9ec035c7c190a5c",
+  "path": "apps/psbtview/lib/bytes.js",
+  "license": "GPL-3.0-or-later"
+ },
+ {
+  "file": "zerogap/psbt/hashes.js",
+  "sha256": "d590ddaa487cfe6bc1e7ae91de8ff032bae5608564662128ae52a23add3f4291",
+  "from": "zerogap",
+  "commit": "99248ea191d7acab3212d2b5b9ec035c7c190a5c",
+  "path": "apps/psbtview/lib/hashes.js",
+  "license": "GPL-3.0-or-later"
+ },
+ {
+  "file": "zerogap/psbt/psbt.js",
+  "sha256": "c07d0a925c75247cf8a15ef59ee3cbb2f30c2f42c68f3f8df3a568a0bec90893",
+  "from": "zerogap",
+  "commit": "99248ea191d7acab3212d2b5b9ec035c7c190a5c",
+  "path": "apps/psbtview/lib/psbt.js",
+  "license": "GPL-3.0-or-later"
+ },
+ {
+  "file": "zerogap/psbt/script.js",
+  "sha256": "2caf811f3a497ae65a7408247ad45ec649515d35a78c120ca6e1b9ee8b037bfb",
+  "from": "zerogap",
+  "commit": "99248ea191d7acab3212d2b5b9ec035c7c190a5c",
+  "path": "apps/psbtview/lib/script.js",
+  "license": "GPL-3.0-or-later"
+ },
+ {
+  "file": "zerogap/psbt/transport.js",
+  "sha256": "07296afca8af40ef22ac6cfdfe28d77c5e766bd4d268b7cafab0761cf5b28f9f",
+  "from": "zerogap",
+  "commit": "99248ea191d7acab3212d2b5b9ec035c7c190a5c",
+  "path": "apps/psbtview/lib/transport.js",
+  "license": "GPL-3.0-or-later"
+ },
+ {
+  "file": "zerogap/psbt/tx.js",
+  "sha256": "55a51d1985a68e680465ed35d674a471789f879386b88f202d4832a03b51c3d6",
+  "from": "zerogap",
+  "commit": "99248ea191d7acab3212d2b5b9ec035c7c190a5c",
+  "path": "apps/psbtview/lib/tx.js",
+  "license": "GPL-3.0-or-later"
+ },
+ {
+  "file": "noble-hashes/_md.js",
+  "sha256": "60cf3010fda89e3e4d3f0e7ff1ce249e9c467f34b4fd41b6fd6101d9f69be763",
+  "from": "npm:@noble/hashes@2.4.0",
+  "integrity": "sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==",
+  "path": "package/_md.js",
+  "license": "MIT"
+ },
+ {
+  "file": "noble-hashes/_u64.js",
+  "sha256": "b09da8c07fe8187c07649494cdb7cd0bcf13df90b506a9473d19e4d5f8c2e102",
+  "from": "npm:@noble/hashes@2.4.0",
+  "integrity": "sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==",
+  "path": "package/_u64.js",
+  "license": "MIT"
+ },
+ {
+  "file": "noble-hashes/hmac.js",
+  "sha256": "fec9f8f3aeda785ea2de91cc4c059d54ef98196261c026c43f48341007ae52c9",
+  "from": "npm:@noble/hashes@2.4.0",
+  "integrity": "sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==",
+  "path": "package/hmac.js",
+  "license": "MIT"
+ },
+ {
+  "file": "noble-hashes/legacy.js",
+  "sha256": "690553a41af2fdd1e32ff6b534ba8508e95f1861c09c2d62fe762b6b501e09be",
+  "from": "npm:@noble/hashes@2.4.0",
+  "integrity": "sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==",
+  "path": "package/legacy.js",
+  "license": "MIT"
+ },
+ {
+  "file": "noble-hashes/sha2.js",
+  "sha256": "471746bba6ec4c6238ca41358d1d3b40b6ff31cf3363f0b4d550c649c1a8e83b",
+  "from": "npm:@noble/hashes@2.4.0",
+  "integrity": "sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==",
+  "path": "package/sha2.js",
+  "license": "MIT"
+ },
+ {
+  "file": "noble-hashes/utils.js",
+  "sha256": "037ad49adb78168b6b699598fd33f85f7877456b1d28b4d032e2a1a16807947c",
+  "from": "npm:@noble/hashes@2.4.0",
+  "integrity": "sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==",
+  "path": "package/utils.js",
+  "license": "MIT"
+ },
+ {
+  "file": "noble-hashes/LICENSE",
+  "sha256": "4f221aee6e072336700c408c68ab3b96a3fc09f6aebe6f48f1bd99e5ef13faec",
+  "from": "npm:@noble/hashes@2.4.0",
+  "integrity": "sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==",
+  "path": "package/LICENSE",
+  "license": "MIT"
+ },
+ {
+  "file": "noble-secp256k1/index.js",
+  "sha256": "ba5aadb469e9208f2da1c9878ab6bb93d2c894f84e6c7ebf9dbf9462741b9fb7",
+  "from": "npm:@noble/secp256k1@3.2.0",
+  "integrity": "sha512-Z3ZAWOTxJ0EuTuZTi7Y69iK7GgrLHh8sgm45lVDhg/b3Nk1TpAiKhick2KkZisHuupeepSkyIydN/J459SdX1w==",
+  "path": "package/index.js",
+  "license": "MIT"
+ },
+ {
+  "file": "noble-secp256k1/LICENSE",
+  "sha256": "394c2e6e5552e5dba202bee6390b9d6aa2754d657f5b9869e83b3d265a315501",
+  "from": "npm:@noble/secp256k1@3.2.0",
+  "integrity": "sha512-Z3ZAWOTxJ0EuTuZTi7Y69iK7GgrLHh8sgm45lVDhg/b3Nk1TpAiKhick2KkZisHuupeepSkyIydN/J459SdX1w==",
+  "path": "package/LICENSE",
+  "license": "MIT"
+ },
+ {
+  "file": "qrcode-generator/qrcode.mjs",
+  "sha256": "ea91d7118a5395289170da848b7c6758b996163bfbccf312591ab65a4911b7c0",
+  "from": "npm:qrcode-generator@2.0.4",
+  "integrity": "sha512-mZSiP6RnbHl4xL2Ap5HfkjLnmxfKcPWpWe/c+5XxCuetEenqmNFf1FH/ftXPCtFG5/TDobjsjz6sSNL0Sr8Z9g==",
+  "path": "package/dist/qrcode.mjs",
+  "license": "MIT"
+ },
+ {
+  "file": "jsqr/jsQR.cjs",
+  "sha256": "bc40c8a15196236b2314db0856f72ca0b49980cd5413b8c852a7349f5fee0859",
+  "from": "npm:jsqr@1.4.0",
+  "integrity": "sha512-dxLob7q65Xg2DvstYkRpkYtmKm2sPJ9oFhrhmudT1dZvNFFTlroai3AWSpLey/w5vMcLBXRgOJsbXpdN9HzU/A==",
+  "path": "package/dist/jsQR.js",
+  "license": "Apache-2.0"
+ },
+ {
+  "file": "jsqr/LICENSE",
+  "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+  "from": "npm:jsqr@1.4.0",
+  "integrity": "sha512-dxLob7q65Xg2DvstYkRpkYtmKm2sPJ9oFhrhmudT1dZvNFFTlroai3AWSpLey/w5vMcLBXRgOJsbXpdN9HzU/A==",
+  "path": "package/LICENSE",
+  "license": "Apache-2.0"
+ }
+]
