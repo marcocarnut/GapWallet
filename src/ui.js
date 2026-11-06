@@ -9,12 +9,14 @@ import { Esplora, EsploraError, PRESETS, parseServer } from "./esplora.js";
 import { DEFAULT_GAP, scanAccount } from "./scan.js";
 import { MIN_RATE, MAX_RATE, cleanEstimates, feeWarnings } from "./coinselect.js";
 import { BuildError, buildSpend, psbtBytes } from "./build.js";
-import { readSigned } from "./signed.js";
+import { KeyReader, SignedReader } from "./signed.js";
 import { MAX_ALPHANUMERIC, Scanner, drawQr, makeQr } from "./qr.js";
 import { parseBtc, formatBtc } from "./amount.js";
 import { save } from "./store.js";
 import { toBase64 } from "../vendor/zerogap/psbt/bytes.js";
 import { electrumQrText } from "../vendor/zerogap/psbt/transport.js";
+import { BBQrError, split } from "../vendor/zerogap/bbqr.js";
+import { DecodeError } from "../vendor/zerogap/psbt/bytes.js";
 import { scriptToAddress } from "../vendor/zerogap/psbt/script.js";
 
 const btc = (sats) => `${formatBtc(sats)} BTC`;
@@ -22,6 +24,9 @@ const shortId = (id) => `${id.slice(0, 10)}…${id.slice(-6)}`;
 const FEE_TARGETS = [[1, "next block"], [3, "3 blocks"], [6, "about an hour"], [144, "about a day"]];
 const LARGE_QR_VERSION = 25;
 const RECEIVE_LIST = 5;
+const SERIES_SIZES = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 64, 128]; // codes in a series
+const SERIES_SPEEDS = [[250, "fast"], [500, "normal"], [1000, "slow"], [2000, "very slow"]]; // ms per code
+const SERIES_VERSION = 12; // the densest code a series starts with; camera-tuned on the rig (BITCOIN.md, B2)
 
 const PRIVACY = [
   ["The Esplora server", "Every address of this account, asked in a burst from one IP address and so linked together: the wallet's balance and whole history, and when you open it. Each transaction you send, before anyone else sees it, and the IP that sent it."],
@@ -75,6 +80,7 @@ export class App {
 
   render() {
     this.stopCamera();
+    this.stopSeries();
     if (this.adding) mount(this.root, this.header(), this.importView());
     else if (!this.client) mount(this.root, this.header(), this.serverView());
     else mount(this.root, this.header(), this.nav(), this[`${this.tab}View`]());
@@ -117,6 +123,8 @@ export class App {
     const fp = h("input", { id: "fingerprint", type: "text", spellcheck: "false", placeholder: "73c5da0a", maxlength: "8" });
     const label = h("input", { id: "label", type: "text", value: `Account ${this.state.accounts.length + 1}` });
     const add = h("button", { id: "add", class: "primary", disabled: true }, "Add this account");
+    const video = h("video", { muted: true, playsinline: true, id: "import-camera", hidden: true });
+    const reading = h("div", { id: "import-reading" });
     let parsed = null;
 
     const check = () => {
@@ -147,6 +155,34 @@ export class App {
     };
     key.addEventListener("input", check);
     fp.addEventListener("input", check);
+
+    // What a code holds goes in the box only if it is a public key: a seed's
+    // QR code, shown to this camera by mistake, mustn't appear on the screen.
+    const startCamera = h("button", { id: "import-start", onclick: () => {
+      const reader = new KeyReader();
+      startCamera.disabled = true;
+      video.hidden = false;
+      this.camera = new Scanner(video, { onError: (m) => mount(reading, notice("bad", m)), onCode: ({ text }) => {
+        try {
+          const got = reader.add(text);
+          if (got.text === undefined) {
+            mount(reading, h("p", { class: "small" }, `Read ${got.have} of ${got.total} codes…`));
+            return;
+          }
+          parseAccount(got.text, form.network, fp.value);
+          key.value = got.text.trim();
+          this.stopCamera();
+          video.hidden = true;
+          startCamera.disabled = false;
+          mount(reading);
+          check();
+        } catch (e) {
+          if (!(e instanceof ImportError || e instanceof DecodeError)) throw e;
+          mount(reading, notice("bad", e.message));
+        }
+      } });
+      this.camera.start();
+    } }, "Read it with the camera");
     add.addEventListener("click", () => {
       const id = `a${Date.now().toString(36)}`;
       this.state.accounts.push({ id, label: label.value.trim() || id, network: form.network, key: key.value.trim(), fingerprint: fp.value.trim().toLowerCase(), gapLimit: DEFAULT_GAP });
@@ -164,6 +200,7 @@ export class App {
           check();
         } }), info.name)),
       h("label", { for: "key" }, "Descriptor, zpub or ypub"), key,
+      h("div", { class: "row" }, startCamera), video, reading,
       h("label", { for: "fingerprint" }, "Master fingerprint (a descriptor already has it)"), fp,
       h("label", { for: "label" }, "Name"), label,
       preview,
@@ -455,20 +492,29 @@ export class App {
     const send = this.send;
     const bytes = psbtBytes(this.account, send.spend, { includePrevious: send.includePrevious });
     const text = electrumQrText(bytes);
-    const qr = text.length <= MAX_ALPHANUMERIC ? makeQr(text) : null;
+    const single = text.length <= MAX_ALPHANUMERIC ? makeQr(text) : null;
     const b64 = toBase64(bytes);
+    const format = single ? send.format || "base43" : "bbqr";
+    const choose = (id, name, disabled) => h("label", { class: "radio" }, h("input", { type: "radio", name: "format", id: `format-${id}`, checked: format === id, disabled,
+      onchange: () => {
+        send.format = id;
+        this.render();
+      } }), name);
     const parts = [h("h2", {}, "Sign it"),
-      h("p", { class: "small dim", id: "psbt-size" }, `PSBT: ${bytes.length} bytes, ${text.length} Base43 characters${qr ? `, QR version ${qr.version}` : ""}${send.includePrevious ? "" : ". Previous transactions left out."}`)];
-    if (qr) {
+      h("p", { class: "small dim", id: "psbt-size" }, `PSBT: ${bytes.length} bytes${send.includePrevious ? "" : ". Previous transactions left out."}`),
+      choose("base43", "One code (Base43: Electrum, and zerogap's signer)", !single),
+      choose("bbqr", "BBQr: a series of codes (Coldcard, Sparrow)", false)];
+    if (!single) parts.push(notice("warn", `This PSBT doesn't fit in one QR code: ${text.length} characters, ${MAX_ALPHANUMERIC} at most. It goes out as a series. zerogap's signer doesn't read series yet.`));
+    if (format === "base43") {
       const canvas = h("canvas", { class: "code", id: "psbt-qr" });
-      drawQr(canvas, qr, Math.max(2, Math.floor(620 / (qr.size + 8))));
+      drawQr(canvas, single, Math.max(2, Math.floor(620 / (single.size + 8))));
       parts.push(h("div", { class: "qr" }, canvas),
-        h("p", {}, "Read this code with the signer (Electrum's Base43 format)."));
-      if (qr.version > LARGE_QR_VERSION) parts.push(notice("warn", "This code is dense. If the camera can't read it, enlarge the window, or see the options below."));
+        h("p", { class: "small dim", id: "qr-info" }, `${text.length} characters, QR version ${single.version}`));
+      if (single.version > LARGE_QR_VERSION) parts.push(notice("warn", "This code is dense. If the camera can't read it, enlarge the window, use a series, or see the options below."));
     } else {
-      parts.push(notice("bad", `This PSBT doesn't fit in one QR code: ${text.length} characters, ${MAX_ALPHANUMERIC} at most.`));
+      parts.push(this.series(bytes));
     }
-    if (send.includePrevious && (!qr || qr.version > LARGE_QR_VERSION)) parts.push(this.dropPrevious());
+    if (send.includePrevious && (!single || single.version > LARGE_QR_VERSION)) parts.push(this.dropPrevious());
     if (!send.includePrevious) {
       parts.push(notice("warn", "Previous transactions are left out of this PSBT: the signer can't prove the coins' amounts."),
         h("div", { class: "row" }, h("button", { id: "restore-previous", class: "small", onclick: () => {
@@ -486,6 +532,71 @@ export class App {
     return h("div", {}, ...parts);
   }
 
+  // The PSBT as an animated series: all its codes the same version. The user
+  // picks how many codes, since what suits a camera is found by trying.
+  series(bytes) {
+    const send = this.send;
+    // split() refuses a file that can't fit that many codes: only sizes that hold this one are offered
+    const fits = new Map();
+    for (const n of SERIES_SIZES) {
+      try {
+        fits.set(n, split(bytes, "P", { maxParts: n }));
+      } catch (e) {
+        if (!(e instanceof BBQrError)) throw e;
+      }
+    }
+    const sizes = [...fits.keys()];
+    if (sizes.length === 0) return notice("bad", "This PSBT is too big even for a series of codes. Save it as a file instead.");
+    if (!fits.has(send.seriesSize)) send.seriesSize = sizes.find((n) => fits.get(n).version <= SERIES_VERSION) ?? sizes.at(-1);
+    send.seriesSpeed ??= 500;
+    const made = fits.get(send.seriesSize);
+    const codes = made.parts.map((p) => makeQr(p, "Alphanumeric", made.version));
+    const canvas = h("canvas", { class: "code", id: "series-qr" });
+    const label = h("span", { class: "small dim", id: "series-part" });
+    const scale = Math.max(2, Math.floor(620 / (codes[0].size + 8)));
+    let at = 0;
+    const show = () => {
+      drawQr(canvas, codes[at], scale);
+      label.textContent = `Code ${at + 1} of ${codes.length}`;
+      canvas.dataset.part = String(at);
+    };
+    const play = () => {
+      this.seriesTimer = setInterval(() => {
+        at = (at + 1) % codes.length;
+        show();
+      }, send.seriesSpeed);
+    };
+    show();
+    const select = (id, name, value, options, set) => h("label", { class: "inline", for: id }, name, " ",
+      h("select", { id, onchange: (e) => {
+        set(Number(e.target.value));
+        this.render();
+      } }, ...options.map(([v, text]) => h("option", { value: String(v), selected: v === value }, text))));
+    const pause = h("button", { id: "series-pause", class: "small", onclick: () => {
+      if (this.seriesTimer) {
+        this.stopSeries();
+        pause.textContent = "Play";
+      } else {
+        play();
+        pause.textContent = "Pause";
+      }
+    } }, "Pause");
+    if (codes.length > 1) play();
+    return h("div", {},
+      h("div", { class: "qr" }, canvas),
+      h("div", { class: "row" }, label, codes.length > 1 ? pause : null),
+      h("p", { class: "small dim", id: "qr-info" }, `BBQr, ${{ Z: "compressed", 2: "base32", H: "hex" }[made.encoding]}: ${codes.length} code${codes.length > 1 ? "s" : ""} of QR version ${made.version}`),
+      h("div", { class: "row" },
+        select("series-size", "Codes, up to", send.seriesSize, sizes.map((n) => [n, String(n)]), (n) => (send.seriesSize = n)),
+        codes.length > 1 ? select("series-speed", "Speed", send.seriesSpeed, SERIES_SPEEDS, (n) => (send.seriesSpeed = n)) : null),
+      h("p", { class: "small dim" }, "If the camera misses codes, use more of them (each is simpler) or slow down. A code it misses comes round again."));
+  }
+
+  stopSeries() {
+    clearInterval(this.seriesTimer);
+    this.seriesTimer = null;
+  }
+
   dropPrevious() {
     const drop = h("button", { id: "drop-previous", class: "danger", disabled: true, onclick: () => {
       this.send.includePrevious = false;
@@ -493,7 +604,7 @@ export class App {
     } }, "Leave out the previous transactions");
     return notice("warn",
       h("strong", {}, "You can make the code smaller, at a cost."),
-      h("p", {}, "The PSBT carries each coin's whole previous transaction, so the signer can prove what the coin is worth. Without it, the signer takes the amounts as given: a lying server could trick it into paying a much higher fee than it shows (the fee attack on segwit)."),
+      h("p", {}, "The PSBT carries each coin's previous transaction, so the signer can prove what the coin is worth. Without it, the signer takes the amounts as given: a lying server could trick it into paying a much higher fee than it shows (the fee attack on segwit)."),
       h("label", { class: "check" }, h("input", { id: "ack-previous", type: "checkbox", onchange: (e) => (drop.disabled = !e.target.checked) }), "I understand, and I got these coins' amounts from a server I trust."),
       h("div", { class: "row" }, drop));
   }
@@ -503,16 +614,24 @@ export class App {
     const result = h("div", { id: "scan-result" });
     const pasted = h("textarea", { id: "signed", spellcheck: "false", placeholder: "Or paste the signed transaction: hex, Base64 or Base43" });
     const video = h("video", { muted: true, playsinline: true, id: "camera", hidden: true });
+    const reader = new SignedReader(send.spend);
     const accept = (code) => {
+      let got;
       try {
-        send.signed = readSigned(code.text, code.bytes, send.spend);
+        got = reader.add(code.text, code.bytes);
       } catch (e) {
         if (e instanceof RangeError) throw e;
         send.signed = null;
         mount(result, notice("bad", e.message));
         return;
       }
-      if (send.signed.kind === "partial") {
+      if (got.kind === "progress") {
+        mount(result, h("label", { for: "series-progress" }, `Read ${got.have} of ${got.total} codes. Keep the series in view.`),
+          h("progress", { id: "series-progress", max: String(got.total), value: String(got.have) }));
+        return;
+      }
+      send.signed = got;
+      if (got.kind === "partial") {
         const { signed, total, matches } = send.signed;
         mount(result, notice("warn", `This is a PSBT with ${signed} of ${total} inputs signed${matches ? "" : ", and it isn't the transaction built here"}. It needs its other signatures: take it to the signer holding the other keys.`));
         return;
@@ -532,7 +651,10 @@ export class App {
       video,
       h("div", { class: "row" }, start),
       h("label", { for: "signed" }, "Or paste it"), pasted,
-      h("div", { class: "row" }, h("button", { id: "read-pasted", onclick: () => accept({ text: pasted.value, bytes: null }) }, "Read")),
+      h("div", { class: "row" }, h("button", { id: "read-pasted", onclick: () => {
+        // a series pasted as lines: each line is one code
+        for (const line of pasted.value.split(/\s+/).filter(Boolean)) accept({ text: line, bytes: null });
+      } }, "Read")),
       result,
       h("div", { class: "row" }, h("button", { onclick: () => this.go("show") }, "Back")));
   }

@@ -26,13 +26,15 @@ nothing to install.
 
 ## Status
 
-Milestone W1, and the first part of W3, of the plan in zerogap's
+Milestones W1 and W2, and the first part of W3, of the plan in zerogap's
 `docs/plans/BITCOIN.md`.
 
 - P2WPKH (`wpkh(…)`, zpub, vpub) and P2SH-P2WPKH (`sh(wpkh(…))`, ypub, upub)
   accounts. Legacy and multisig are the rest of W3.
 - Mainnet, signet and testnet4.
-- PSBTs go out as one Electrum Base43 QR code. BBQr, and animated codes, are W2.
+- PSBTs go out as one Electrum Base43 QR code when they fit, or as an animated
+  BBQr series; signed transactions come back the same ways (`docs/ESPLORA.md`,
+  "QR codes"). zerogap's signer reads series after S2.
 - One recipient per transaction.
 
 ## How it's put together
@@ -41,6 +43,7 @@ Milestone W1, and the first part of W3, of the plan in zerogap's
 | --- | --- |
 | `gapwallet.html` | The program: built, unminified. |
 | `docs/ESPLORA.md` | W0: the requests it makes, how it scans, fees, coins, privacy. Written before the code. |
+| `tests/fixtures/bbqr-real-scan.txt` | A real scan's BBQr codes, from the BBQr project (public domain; provenance in `tests/bbqr.test.mjs`). |
 | `src/` | The wallet: `descriptor.js` (imports), `account.js` (addresses), `esplora.js` (the client), `scan.js`, `coinselect.js`, `build.js` (transactions and PSBTs), `signed.js` (what comes back), `qr.js`, `ui.js`. |
 | `vendor/` | Libraries, byte for byte, with origins and hashes in `vendor/MANIFEST.json`. Never edited by hand. |
 | `tools/build.mjs` | Joins `src/` and `vendor/` into the page. No dependencies; the same inputs give the same bytes. |
