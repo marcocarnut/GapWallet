@@ -10,9 +10,9 @@ to serve exactly what is in "Endpoints", with the same shapes.
 
 | Network | Coin type | Keys | Addresses | Genesis block |
 | --- | --- | --- | --- | --- |
-| mainnet | `0h` | zpub, xpub | `bc1…` | `000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f` |
-| signet | `1h` | vpub, tpub | `tb1…` | `00000008819873e925422c1ff0f99f7cc9bbb232af63a077a480a3633bee1ef6` |
-| testnet4 | `1h` | vpub, tpub | `tb1…` | `00000000da84f2bafbbc53dee25a72ae507ff4914b867c565be350b0da8bf043` |
+| mainnet | `0h` | zpub, ypub, xpub | `bc1…`, `3…` | `000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f` |
+| signet | `1h` | vpub, upub, tpub | `tb1…`, `2…` | `00000008819873e925422c1ff0f99f7cc9bbb232af63a077a480a3633bee1ef6` |
+| testnet4 | `1h` | vpub, upub, tpub | `tb1…`, `2…` | `00000000da84f2bafbbc53dee25a72ae507ff4914b867c565be350b0da8bf043` |
 
 - **No default server.** The page contacts nothing until the user has chosen a
   server for the account's network. mempool.space's addresses are offered as
@@ -159,7 +159,8 @@ payment past the scan. The page says so, and the gap limit can be raised.
 - Rates are sat/vB, from 0.1 up to 10000; a fee is rounded up to a whole
   satoshi.
 - Size is computed from the weight, with a 72-byte signature: 42 WU overhead,
-  272 WU per P2WPKH input, `4 × (9 + script)` per output.
+  272 WU per P2WPKH input, 364 per P2SH-P2WPKH input, `4 × (9 + script)` per
+  output.
 - **Warnings the user must acknowledge:** a fee above 5% of the amount sent,
   or a rate over 3 times the 1-block estimate. Rates outside the range above
   are refused.
@@ -188,8 +189,8 @@ Selection is deterministic for the same coins, amount and rate.
 
 - On chain 1, at the first index after the highest used one, which is always
   within the scan's reach and the signer's bound on change.
-- Change below the dust limit (294 sat, for P2WPKH) goes to the fee, and the
-  page says how much.
+- Change below the dust limit (294 sat for a P2WPKH account, 540 for
+  P2SH-P2WPKH) goes to the fee, and the page says how much.
 - Outputs are placed in random order, and inputs too: a wallet that always
   puts change last gives it away.
 - A payment below its address type's dust limit is refused: P2WPKH 294,
@@ -197,15 +198,24 @@ Selection is deterministic for the same coins, amount and rate.
 
 ### The PSBT
 
-The contract is "PSBTs" in BITCOIN.md. Version 0. For W1, P2WPKH inputs only:
+The contract is "PSBTs" in BITCOIN.md. Version 0, for P2WPKH and P2SH-P2WPKH
+accounts (`sh(wpkh(…))`, purpose 49, ypub or upub):
 
 - `PSBT_GLOBAL_UNSIGNED_TX`;
 - each input: `PSBT_IN_NON_WITNESS_UTXO`, `PSBT_IN_WITNESS_UTXO`,
   `PSBT_IN_BIP32_DERIVATION`;
 - the change output: `PSBT_OUT_BIP32_DERIVATION`;
+- P2SH-P2WPKH also has `PSBT_IN_REDEEM_SCRIPT` on inputs and
+  `PSBT_OUT_REDEEM_SCRIPT` on change;
 - a derivation always holds the **master** fingerprint and the full path,
-  `m/84'/<coin>'/<account>'/<chain>/<index>`. An account's own fingerprint is
+  `m/<purpose>'/<coin>'/<account>'/<chain>/<index>`. An account's own fingerprint is
   never written in its place.
+
+A P2SH-P2WPKH txid covers the scriptSig, unlike native segwit's, so the signed
+transaction's txid isn't the unsigned one's. The scriptSig is known in advance
+(one push of the redeemScript), so the finished txid is computed when the
+transaction is built, and a signed transaction with any other scriptSig
+counts as a different transaction.
 
 An account with no known master fingerprint is watch-only: balance and
 history work, and the page refuses to build a PSBT. A descriptor carries the

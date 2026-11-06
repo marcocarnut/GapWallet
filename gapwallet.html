@@ -23,7 +23,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-avO2wk6tJn1+1H628rJw0sCJqGZf8FLUY5PHALBMSSI='; style-src 'sha256-6KnHjxtN3aIictIuLVMvdYwWFRDEEDiMZSipx/Q9Nnw='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-8f2EXo1FuF7Eb8Toxjdy/4q2+M5jgLuSBEoUU1m4kWQ='; style-src 'sha256-6KnHjxtN3aIictIuLVMvdYwWFRDEEDiMZSipx/Q9Nnw='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GapWallet</title>
@@ -4453,17 +4453,18 @@ __exports["Bip32Error"] = Bip32Error; __exports["versionFor"] = versionFor; __ex
 // What the user imports: an account's public key, as a descriptor or a zpub.
 //
 //   wpkh([73c5da0a/84h/0h/0h]xpub…/<0;1>/*)#checksum      (BITCOIN.md, "Public key export")
-//   zpub…  (vpub… on test networks)
+//   sh(wpkh([73c5da0a/49h/0h/0h]xpub…/<0;1>/*))#checksum
+//   zpub… or ypub…  (vpub…, upub… on test networks)
 //
 // parseAccount() -> { network, script, purpose, coinType, account, node (the
 // account's public BIP-32 node), fingerprint (hex, the master's) | null,
 // warnings: [string] }
 //
-// W1 takes P2WPKH accounts only. Private keys are refused by what they look
+// P2WPKH and P2SH-P2WPKH accounts. Private keys are refused by what they look
 // like, before anything else reads them, and an error never repeats its input.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-const { HARDENED, parseXpub, serializeXpub, Bip32Error } = __mod("vendor/zerogap/bip32.js");
+const { HARDENED, parseXpub, serializeXpub, versionFor, Bip32Error } = __mod("vendor/zerogap/bip32.js");
 
 class ImportError extends Error {
   constructor(message) {
@@ -4476,6 +4477,11 @@ const NETWORK_INFO = {
   mainnet: { name: "Mainnet", lib: "mainnet", coinType: 0 },
   signet: { name: "Signet", lib: "testnet", coinType: 1 },
   testnet4: { name: "Testnet4", lib: "testnet", coinType: 1 },
+};
+
+const SCRIPT_INFO = {
+  p2wpkh: { name: "P2WPKH", purpose: 84, wrap: (key) => `wpkh(${key})` },
+  "p2sh-p2wpkh": { name: "P2SH-P2WPKH", purpose: 49, wrap: (key) => `sh(wpkh(${key}))` },
 };
 
 // BIP-380's checksum.
@@ -4536,7 +4542,7 @@ function accountOf(node) {
     throw new ImportError(`This key is at depth ${node.depth}, not an account's (depth 3). A master xpub can't stand in: ` +
       "account paths are hardened, so a watch-only wallet can't derive them from it.");
   }
-  if (node.childNumber < HARDENED) throw new ImportError("This key's account number isn't hardened, so it isn't a BIP-84 account key.");
+  if (node.childNumber < HARDENED) throw new ImportError("This key's account number isn't hardened, so it isn't an account key.");
   return node.childNumber - HARDENED;
 }
 
@@ -4550,8 +4556,8 @@ function checkNetwork(keyNetwork, network) {
   return info;
 }
 
-const accountFields = (network, info, account, node, fingerprint, warnings) => ({
-  network, script: "p2wpkh", purpose: 84, coinType: info.coinType, account, node, fingerprint, warnings });
+const accountFields = (network, script, info, account, node, fingerprint, warnings) => ({
+  network, script, purpose: SCRIPT_INFO[script].purpose, coinType: info.coinType, account, node, fingerprint, warnings });
 
 function parseFingerprint(text) {
   const s = (text || "").trim().toLowerCase();
@@ -4562,14 +4568,13 @@ function parseFingerprint(text) {
 
 function parseExtendedKey(text, network, fingerprint) {
   const prefix = text.slice(0, 4);
-  if (prefix === "ypub" || prefix === "upub") throw new ImportError("Nested segwit accounts (ypub, upub) aren't supported yet.");
   if (prefix === "xpub" || prefix === "tpub") {
-    throw new ImportError(`A bare ${prefix} doesn't say what kind of addresses it makes. Import the descriptor, or the zpub.`);
+    throw new ImportError(`A bare ${prefix} doesn't say what kind of addresses it makes. Import the descriptor, or the zpub or ypub.`);
   }
-  if (prefix !== "zpub" && prefix !== "vpub") throw new ImportError("This isn't a descriptor or a zpub.");
+  if (!["zpub", "vpub", "ypub", "upub"].includes(prefix)) throw new ImportError("This isn't a descriptor, a zpub or a ypub.");
   const key = readKey(text);
   const info = checkNetwork(key.network, network);
-  return accountFields(network, info, accountOf(key.node), key.node, fingerprint, []);
+  return accountFields(network, key.script, info, accountOf(key.node), key.node, fingerprint, []);
 }
 
 function parseDescriptor(text, network, fingerprintGiven) {
@@ -4581,10 +4586,13 @@ function parseDescriptor(text, network, fingerprintGiven) {
   } else if (text.slice(hash + 1) !== descriptorChecksum(body)) {
     throw new ImportError("The descriptor's checksum is wrong: it was changed or mistyped.");
   }
-  if (/^(sh|pkh|tr|wsh)\(/.test(body)) throw new ImportError("Only wpkh(…) accounts are supported for now.");
-  const m = /^wpkh\((?:\[([0-9a-fA-F]{8})((?:\/\d+['h]?)*)\])?([1-9A-HJ-NP-Za-km-z]+)\/<0;1>\/\*\)$/.exec(body);
+  const nested = body.startsWith("sh(wpkh(");
+  const script = nested ? "p2sh-p2wpkh" : "p2wpkh";
+  const inner = nested && body.endsWith(")") ? body.slice(3, -1) : body;
+  if (/^(sh|pkh|tr|wsh)\(/.test(inner)) throw new ImportError("Only wpkh(…) and sh(wpkh(…)) accounts are supported for now.");
+  const m = /^wpkh\((?:\[([0-9a-fA-F]{8})((?:\/\d+['h]?)*)\])?([1-9A-HJ-NP-Za-km-z]+)\/<0;1>\/\*\)$/.exec(inner);
   if (!m) {
-    if (/\/[01]\/\*\)$/.test(body)) throw new ImportError("This descriptor covers one chain only. The wallet needs both: …/<0;1>/*.");
+    if (/\/[01]\/\*\)+$/.test(body)) throw new ImportError("This descriptor covers one chain only. The wallet needs both: …/<0;1>/*.");
     throw new ImportError("This descriptor isn't of the form wpkh([fingerprint/84h/0h/0h]xpub…/<0;1>/*).");
   }
   const [, fp, origin, xpub] = m;
@@ -4594,21 +4602,21 @@ function parseDescriptor(text, network, fingerprintGiven) {
   const info = checkNetwork(key.network, network);
   const account = accountOf(key.node);
   if (fp) {
-    const want = [84, info.coinType, account].map((n) => `/${n}h`).join("");
+    const want = [SCRIPT_INFO[script].purpose, info.coinType, account].map((n) => `/${n}h`).join("");
     if (origin.replace(/'/g, "h") !== want) {
       throw new ImportError(`The descriptor's origin should be ${want.slice(1)}, for this key on ${info.name}.`);
     }
     const given = fingerprintGiven;
     if (given && given !== fp.toLowerCase()) throw new ImportError("The descriptor's fingerprint isn't the one you typed.");
-    return accountFields(network, info, account, key.node, fp.toLowerCase(), warnings);
+    return accountFields(network, script, info, account, key.node, fp.toLowerCase(), warnings);
   }
-  return accountFields(network, info, account, key.node, fingerprintGiven, warnings);
+  return accountFields(network, script, info, account, key.node, fingerprintGiven, warnings);
 }
 
 // `fingerprint`: the master's, as typed, or "" when the import doesn't say.
 function parseAccount(text, network, fingerprint = "") {
   const s = String(text).trim();
-  if (s === "") throw new ImportError("Paste a descriptor or a zpub.");
+  if (s === "") throw new ImportError("Paste a descriptor, a zpub or a ypub.");
   if (looksPrivate(s)) throw new ImportError("This is a private key or a seed. Nothing was kept. GapWallet only ever takes public keys.");
   const fp = parseFingerprint(fingerprint);
   return /^[a-z]+\(/.test(s) ? parseDescriptor(s, network, fp) : parseExtendedKey(s, network, fp);
@@ -4617,14 +4625,20 @@ function parseAccount(text, network, fingerprint = "") {
 // The account's descriptor, with origin (when known) and checksum, as text.
 function accountDescriptor(a) {
   const key = serializeXpub(a.node, a.coinType === 0 ? "xpub" : "tpub");
-  const origin = a.fingerprint ? `[${a.fingerprint}/84h/${a.coinType}h/${a.account}h]` : "";
-  const body = `wpkh(${origin}${key}/<0;1>/*)`;
+  const origin = a.fingerprint ? `[${a.fingerprint}/${a.purpose}h/${a.coinType}h/${a.account}h]` : "";
+  const body = SCRIPT_INFO[a.script].wrap(`${origin}${key}/<0;1>/*`);
   return `${body}#${descriptorChecksum(body)}`;
+}
+
+// The account's key as Electrum shows it: { name: "zpub", key }.
+function accountSlip132(a) {
+  const name = versionFor(a.script, NETWORK_INFO[a.network].lib);
+  return { name, key: serializeXpub(a.node, name) };
 }
 
 const accountPath = (a) => `m/${a.purpose}'/${a.coinType}'/${a.account}'`;
 
-__exports["ImportError"] = ImportError; __exports["descriptorChecksum"] = descriptorChecksum; __exports["parseAccount"] = parseAccount; __exports["accountDescriptor"] = accountDescriptor; __exports["NETWORK_INFO"] = NETWORK_INFO; __exports["accountPath"] = accountPath;
+__exports["ImportError"] = ImportError; __exports["descriptorChecksum"] = descriptorChecksum; __exports["parseAccount"] = parseAccount; __exports["accountDescriptor"] = accountDescriptor; __exports["accountSlip132"] = accountSlip132; __exports["NETWORK_INFO"] = NETWORK_INFO; __exports["SCRIPT_INFO"] = SCRIPT_INFO; __exports["accountPath"] = accountPath;
 }
 
 // ======== vendor/zerogap/psbt/bech32.js ========
@@ -4917,12 +4931,13 @@ __exports["parseScript"] = parseScript; __exports["disassemble"] = disassemble; 
 { const __exports = {}; __modules.set("src/account.js", __exports);
 // An account's addresses, derived here and never taken from a server.
 //
-//   addressAt(account, chain, index) -> { address, script, pubkey, chain, index, path, steps }
+//   addressAt(account, chain, index)
+//     -> { address, script, redeemScript | null, pubkey, chain, index, path, steps }
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 const { HARDENED, deriveChild } = __mod("vendor/zerogap/bip32.js");
 const { hash160 } = __mod("vendor/zerogap/psbt/hashes.js");
-const { p2wpkhScript, scriptToAddress } = __mod("vendor/zerogap/psbt/script.js");
+const { p2shScript, p2wpkhScript, scriptToAddress } = __mod("vendor/zerogap/psbt/script.js");
 const { accountPath, NETWORK_INFO } = __mod("src/descriptor.js");
 
 const chains = new WeakMap(); // account -> [chain 0's node, chain 1's node]
@@ -4938,8 +4953,11 @@ function addressAt(account, chain, index) {
   if (chain !== 0 && chain !== 1) throw new RangeError("chain is 0 or 1");
   if (!Number.isInteger(index) || index < 0 || index >= HARDENED) throw new RangeError("bad address index");
   const pubkey = deriveChild(chainNode(account, chain), index).publicKey;
-  const script = p2wpkhScript(hash160(pubkey));
-  return { address: scriptToAddress(script, NETWORK_INFO[account.network].lib), script, pubkey, chain, index,
+  const witnessProgram = p2wpkhScript(hash160(pubkey));
+  const nested = account.script === "p2sh-p2wpkh";
+  const script = nested ? p2shScript(hash160(witnessProgram)) : witnessProgram;
+  return { address: scriptToAddress(script, NETWORK_INFO[account.network].lib), script,
+    redeemScript: nested ? witnessProgram : null, pubkey, chain, index,
     path: `${accountPath(account)}/${chain}/${index}`,
     steps: [HARDENED + account.purpose, HARDENED + account.coinType, HARDENED + account.account, chain, index] };
 }
@@ -5075,16 +5093,23 @@ __exports["historyItem"] = historyItem; __exports["scanAccount"] = scanAccount; 
 const { compactSizeLength } = __mod("vendor/zerogap/psbt/bytes.js");
 
 const MIN_RATE = 0.1, MAX_RATE = 10000;
-const CHANGE_SCRIPT = 22; // P2WPKH
 const DUST = { p2wpkh: 294, p2sh: 540, p2pkh: 546, p2wsh: 330, p2tr: 330 };
 
-const INPUT_WEIGHT = 272; // 41 × 4, and a witness of 1 + (1 + 72) + (1 + 33): a signature's 71 bytes and the sighash byte
+// What an account's script type costs. A witness is 108 WU: 1 + (1 + 72) + (1 + 33),
+// a signature's 71 bytes and the sighash byte. An input's fixed part is 41 bytes;
+// P2SH-P2WPKH adds a scriptSig of 23.
+const KINDS = {
+  p2wpkh: { inputWeight: 41 * 4 + 108, changeScript: 22, changeDust: DUST.p2wpkh },
+  "p2sh-p2wpkh": { inputWeight: (41 + 23) * 4 + 108, changeScript: 23, changeDust: DUST.p2sh },
+};
+
 const outputWeight = (scriptLength) => 4 * (8 + compactSizeLength(scriptLength) + scriptLength);
 
-// A P2WPKH-input transaction's size; `scripts`: its output scripts' lengths.
-function vsizeOf(inputs, scripts) {
+// The size of a transaction with `inputs` inputs of this kind; `scripts`: its
+// output scripts' lengths.
+function vsizeOf(inputs, scripts, kind = KINDS.p2wpkh) {
   const base = 4 * (4 + 4 + compactSizeLength(inputs) + compactSizeLength(scripts.length)) + 2; // version, locktime, counts, segwit marker
-  const weight = base + inputs * INPUT_WEIGHT + scripts.reduce((sum, n) => sum + outputWeight(n), 0);
+  const weight = base + inputs * kind.inputWeight + scripts.reduce((sum, n) => sum + outputWeight(n), 0);
   return Math.ceil(weight / 4);
 }
 
@@ -5114,12 +5139,12 @@ class SelectError extends Error {
 const byValue = (a, b) => a.value - b.value || (a.txid < b.txid ? -1 : a.txid > b.txid ? 1 : a.vout - b.vout);
 
 // With these inputs: { inputs, change, fee, dropped (to the fee, satoshis), vsize }, or null if they fall short.
-function settle(inputs, amount, scripts, rate) {
+function settle(inputs, amount, scripts, rate, kind) {
   const total = inputs.reduce((sum, c) => sum + c.value, 0);
-  const withChange = vsizeOf(inputs.length, [...scripts, CHANGE_SCRIPT]);
+  const withChange = vsizeOf(inputs.length, [...scripts, kind.changeScript], kind);
   const change = total - amount - feeFor(withChange, rate);
-  if (change >= DUST.p2wpkh) return { inputs, change, fee: total - amount - change, dropped: 0, vsize: withChange };
-  const vsize = vsizeOf(inputs.length, scripts);
+  if (change >= kind.changeDust) return { inputs, change, fee: total - amount - change, dropped: 0, vsize: withChange };
+  const vsize = vsizeOf(inputs.length, scripts, kind);
   const fee = feeFor(vsize, rate);
   if (total < amount + fee) return null;
   return { inputs, change: 0, fee: total - amount, dropped: total - amount - fee, vsize };
@@ -5127,49 +5152,50 @@ function settle(inputs, amount, scripts, rate) {
 
 // request: { coins (Coin[]), amount (satoshis; ignored by sendAll), scripts
 // (the payments' script lengths), rate, manual (spend exactly `coins`),
-// sendAll } -> settle()'s, plus `amount`, `skipped` (coins worth less than
+// sendAll, kind (of KINDS: the account's) } -> settle()'s, plus `amount`, `skipped` (coins worth less than
 // they cost to spend).
-function selectCoins({ coins, amount, scripts, rate, manual = false, sendAll = false }) {
+function selectCoins({ coins, amount, scripts, rate, manual = false, sendAll = false, kind = KINDS.p2wpkh }) {
   if (coins.length === 0) throw new SelectError(manual ? "Choose at least one coin." : "There are no coins to spend.");
   if (sendAll) {
     const usable = manual ? coins : coins.filter((c) => c.confirmed);
     if (usable.length === 0) throw new SelectError("There are no confirmed coins yet.");
     const total = usable.reduce((sum, c) => sum + c.value, 0);
-    const vsize = vsizeOf(usable.length, scripts);
+    const vsize = vsizeOf(usable.length, scripts, kind);
     const fee = feeFor(vsize, rate);
     if (total - fee <= 0) throw new SelectError("These coins don't cover the fee at this rate.");
     return { inputs: usable, change: 0, fee, dropped: 0, vsize, amount: total - fee, skipped: 0 };
   }
   if (manual) {
-    const got = settle(coins, amount, scripts, rate);
+    const got = settle(coins, amount, scripts, rate, kind);
     if (!got) throw new SelectError("The coins you chose don't cover the amount and the fee.");
     return { ...got, amount, skipped: 0 };
   }
 
   const unconfirmed = coins.filter((c) => !c.confirmed).reduce((sum, c) => sum + c.value, 0);
-  const inputCost = feeFor(INPUT_WEIGHT / 4, rate);
+  const inputCost = feeFor(kind.inputWeight / 4, rate);
   const confirmed = coins.filter((c) => c.confirmed);
   const worth = confirmed.filter((c) => c.value > inputCost).sort(byValue);
   const skipped = confirmed.length - worth.length;
   const done = (got) => ({ ...got, amount, skipped });
 
   // 1. One coin, close enough that change wouldn't pay for itself
-  const changeCost = feeFor(vsizeOf(1, [...scripts, CHANGE_SCRIPT]), rate) - feeFor(vsizeOf(1, scripts), rate);
+  const single = vsizeOf(1, scripts, kind);
+  const changeCost = feeFor(vsizeOf(1, [...scripts, kind.changeScript], kind), rate) - feeFor(single, rate);
   for (const c of worth) {
-    const fee = feeFor(vsizeOf(1, scripts), rate);
+    const fee = feeFor(single, rate);
     const excess = c.value - amount - fee;
-    if (excess >= 0 && excess <= changeCost) return done({ inputs: [c], change: 0, fee: fee + excess, dropped: excess, vsize: vsizeOf(1, scripts) });
+    if (excess >= 0 && excess <= changeCost) return done({ inputs: [c], change: 0, fee: fee + excess, dropped: excess, vsize: single });
   }
   // 2. The smallest coin that covers it
   for (const c of worth) {
-    const got = settle([c], amount, scripts, rate);
+    const got = settle([c], amount, scripts, rate, kind);
     if (got) return done(got);
   }
   // 3. The largest coins, one by one
   const inputs = [];
   for (const c of [...worth].reverse()) {
     inputs.push(c);
-    const got = settle([...inputs], amount, scripts, rate);
+    const got = settle([...inputs], amount, scripts, rate, kind);
     if (got) return done(got);
   }
   const held = unconfirmed > 0 ? ` Another ${unconfirmed} sat is unconfirmed: choose those coins by hand to spend them.` : "";
@@ -5184,7 +5210,7 @@ function feeWarnings({ fee, amount, rate, estimate }) {
   return out;
 }
 
-__exports["vsizeOf"] = vsizeOf; __exports["cleanEstimates"] = cleanEstimates; __exports["SelectError"] = SelectError; __exports["selectCoins"] = selectCoins; __exports["feeWarnings"] = feeWarnings; __exports["MIN_RATE"] = MIN_RATE; __exports["MAX_RATE"] = MAX_RATE; __exports["CHANGE_SCRIPT"] = CHANGE_SCRIPT; __exports["DUST"] = DUST; __exports["feeFor"] = feeFor;
+__exports["vsizeOf"] = vsizeOf; __exports["cleanEstimates"] = cleanEstimates; __exports["SelectError"] = SelectError; __exports["selectCoins"] = selectCoins; __exports["feeWarnings"] = feeWarnings; __exports["MIN_RATE"] = MIN_RATE; __exports["MAX_RATE"] = MAX_RATE; __exports["DUST"] = DUST; __exports["KINDS"] = KINDS; __exports["feeFor"] = feeFor;
 }
 
 // ======== vendor/zerogap/psbt/tx.js ========
@@ -5829,8 +5855,8 @@ __exports["PsbtError"] = PsbtError; __exports["computeLocktime"] = computeLockti
 // SPDX-License-Identifier: GPL-3.0-or-later
 const { addressAt } = __mod("src/account.js");
 const { NETWORK_INFO } = __mod("src/descriptor.js");
-const { MIN_RATE, MAX_RATE, DUST, SelectError, selectCoins } = __mod("src/coinselect.js");
-const { fromHex, fromHexReversed, toHex, equal, Writer, DecodeError } = __mod("vendor/zerogap/psbt/bytes.js");
+const { MIN_RATE, MAX_RATE, DUST, KINDS, SelectError, selectCoins } = __mod("src/coinselect.js");
+const { concat, fromHex, fromHexReversed, toHex, equal, Writer, DecodeError } = __mod("vendor/zerogap/psbt/bytes.js");
 const { addressToScript, classify } = __mod("vendor/zerogap/psbt/script.js");
 const { parseTx, serializeTx, txid: txidOf } = __mod("vendor/zerogap/psbt/tx.js");
 const { parsePsbt, serializePsbt, setEntry, GLOBAL, IN, OUT } = __mod("vendor/zerogap/psbt/psbt.js");
@@ -5897,7 +5923,7 @@ async function previousOf(coin, client) {
 
 // request: { address, amount (satoshis), sendAll, rate, coins (chosen by
 // hand) | null }.
-// Spend = { txid, tx, inputs: [Coin + previous], outputs: [{ address, value, script, change: entry | null }],
+// Spend = { txid (of the finished transaction), unsignedTxid, tx, inputs: [Coin + previous], outputs: [{ address, value, script, change: entry | null }],
 //           fee, vsize, amount, rate, dropped, skipped }
 async function buildSpend(account, scan, request, client, { random = randomBelow } = {}) {
   if (!account.fingerprint) {
@@ -5915,7 +5941,7 @@ async function buildSpend(account, scan, request, client, { random = randomBelow
   let chosen;
   try {
     chosen = selectCoins({ coins: request.coins || scan.coins, amount: request.amount, scripts: [script.length], rate,
-      manual: Boolean(request.coins), sendAll });
+      manual: Boolean(request.coins), sendAll, kind: KINDS[account.script] });
   } catch (e) {
     if (e instanceof SelectError) throw new BuildError(e.message);
     throw e;
@@ -5935,8 +5961,16 @@ async function buildSpend(account, scan, request, client, { random = randomBelow
   const tx = { version: 2, locktime: tipHeight, segwit: false,
     inputs: inputs.map((c) => ({ txid: fromHexReversed(c.txid), vout: c.vout, scriptSig: new Uint8Array(0), sequence: SEQUENCE_RBF, witness: [] })),
     outputs: outputs.map((o) => ({ value: o.value, script: o.script })) };
-  return { txid: txidOf(tx), tx, inputs, outputs, fee: chosen.fee, vsize: chosen.vsize, amount: chosen.amount, rate,
+  return { txid: finishedTxid(tx, inputs), unsignedTxid: txidOf(tx), tx, inputs, outputs, fee: chosen.fee, vsize: chosen.vsize, amount: chosen.amount, rate,
     dropped: chosen.dropped, skipped: chosen.skipped };
+}
+
+// The txid once signed. Witnesses don't count, but a P2SH-P2WPKH input's
+// scriptSig does, and it is known already: one push of the redeemScript. So a
+// signed transaction with any other scriptSig isn't the one built here.
+function finishedTxid(tx, inputs) {
+  const scriptSig = (c) => (c.entry.redeemScript ? concat([Uint8Array.of(c.entry.redeemScript.length), c.entry.redeemScript]) : new Uint8Array(0));
+  return txidOf({ ...tx, inputs: tx.inputs.map((input, i) => ({ ...input, scriptSig: scriptSig(inputs[i]) })) });
 }
 
 // PSBT_*_BIP32_DERIVATION's value: the master fingerprint, then the path.
@@ -5963,11 +5997,13 @@ function psbtBytes(account, spend, { includePrevious = true } = {}) {
     const map = { entries: [] };
     if (includePrevious) setEntry(map, IN.NON_WITNESS_UTXO, NO_KEY, c.previous);
     setEntry(map, IN.WITNESS_UTXO, NO_KEY, witnessUtxo(c));
+    if (c.entry.redeemScript) setEntry(map, IN.REDEEM_SCRIPT, NO_KEY, c.entry.redeemScript);
     setEntry(map, IN.BIP32_DERIVATION, c.entry.pubkey, derivationValue(account, c.entry));
     return map;
   });
   const outputs = spend.outputs.map((o) => {
     const map = { entries: [] };
+    if (o.change?.redeemScript) setEntry(map, OUT.REDEEM_SCRIPT, NO_KEY, o.change.redeemScript);
     if (o.change) setEntry(map, OUT.BIP32_DERIVATION, o.change.pubkey, derivationValue(account, o.change));
     return map;
   });
@@ -6083,7 +6119,8 @@ __exports["readPayload"] = readPayload; __exports["electrumQrText"] = electrumQr
 //
 // Throws DecodeError with a message for people. A finished transaction with
 // the expected txid is the one we built, signed: a segwit txid doesn't
-// cover the signatures but does cover every input and output.
+// cover the signatures but does cover every input and output, and the
+// scriptSig of a nested input (build.js, finishedTxid).
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 const { toHex, DecodeError } = __mod("vendor/zerogap/psbt/bytes.js");
@@ -6096,10 +6133,10 @@ function readSigned(text, bytes, pending) {
   if (payload.kind === "psbt") {
     const psbt = parsePsbt(payload.bytes);
     const signed = psbt.inputs.filter((m) => m.fields.partialSigs?.length || m.fields.finalScriptWitness).length;
-    return { kind: "partial", signed, total: psbt.inputs.length, matches: Boolean(pending) && txidOf(psbt.tx) === pending.txid };
+    return { kind: "partial", signed, total: psbt.inputs.length, matches: Boolean(pending) && txidOf(psbt.tx) === pending.unsignedTxid };
   }
   const tx = parseTx(payload.bytes);
-  if (tx.inputs.some((i) => i.witness.length === 0 && i.scriptSig.length === 0)) {
+  if (tx.inputs.some((i) => i.witness.length === 0)) {
     throw new DecodeError("This transaction isn't signed yet.");
   }
   const txid = txidOf(tx);
@@ -18597,7 +18634,7 @@ __exports["parseBtc"] = parseBtc; __exports["formatBtc"] = formatBtc; __exports[
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 const { h, mount, copyText, download } = __mod("src/dom.js");
-const { NETWORK_INFO, parseAccount, accountDescriptor, accountPath, ImportError } = __mod("src/descriptor.js");
+const { NETWORK_INFO, SCRIPT_INFO, parseAccount, accountDescriptor, accountPath, accountSlip132, ImportError } = __mod("src/descriptor.js");
 const { addressAt } = __mod("src/account.js");
 const { Esplora, EsploraError, PRESETS, parseServer } = __mod("src/esplora.js");
 const { DEFAULT_GAP, scanAccount } = __mod("src/scan.js");
@@ -18610,7 +18647,6 @@ const { save } = __mod("src/store.js");
 const { toBase64 } = __mod("vendor/zerogap/psbt/bytes.js");
 const { electrumQrText } = __mod("vendor/zerogap/psbt/transport.js");
 const { scriptToAddress } = __mod("vendor/zerogap/psbt/script.js");
-const { serializeXpub } = __mod("vendor/zerogap/bip32.js");
 
 const btc = (sats) => `${formatBtc(sats)} BTC`;
 const shortId = (id) => `${id.slice(0, 10)}…${id.slice(-6)}`;
@@ -18708,7 +18744,7 @@ class App {
   importView() {
     const form = { network: null };
     const preview = h("div", { id: "preview" });
-    const key = h("textarea", { id: "key", spellcheck: "false", autocapitalize: "off", placeholder: "wpkh([73c5da0a/84h/0h/0h]xpub…/<0;1>/*)#…   or   zpub…" });
+    const key = h("textarea", { id: "key", spellcheck: "false", autocapitalize: "off", placeholder: "wpkh([73c5da0a/84h/0h/0h]xpub…/<0;1>/*)#…   or   zpub…, ypub…" });
     const fp = h("input", { id: "fingerprint", type: "text", spellcheck: "false", placeholder: "73c5da0a", maxlength: "8" });
     const label = h("input", { id: "label", type: "text", value: `Account ${this.state.accounts.length + 1}` });
     const add = h("button", { id: "add", class: "primary", disabled: true }, "Add this account");
@@ -18732,7 +18768,7 @@ class App {
       add.disabled = false;
       mount(preview,
         h("dl", {},
-          h("dt", {}, "Account"), h("dd", { class: "mono" }, `${accountPath(parsed)} (P2WPKH)`),
+          h("dt", {}, "Account"), h("dd", { class: "mono", id: "preview-path" }, `${accountPath(parsed)} (${SCRIPT_INFO[parsed.script].name})`),
           h("dt", {}, "Master fingerprint"), h("dd", { class: "mono" }, parsed.fingerprint || "none yet")),
         ...parsed.warnings.map((w) => notice("warn", w)),
         parsed.fingerprint ? null : notice("warn", "Without the master fingerprint this account is watch-only: you'll see its balance and history, but can't build transactions until you add it. The signer shows it with the public key."),
@@ -18758,7 +18794,7 @@ class App {
           form.network = id;
           check();
         } }), info.name)),
-      h("label", { for: "key" }, "Descriptor or zpub"), key,
+      h("label", { for: "key" }, "Descriptor, zpub or ypub"), key,
       h("label", { for: "fingerprint" }, "Master fingerprint (a descriptor already has it)"), fp,
       h("label", { for: "label" }, "Name"), label,
       preview,
@@ -19180,6 +19216,7 @@ class App {
 
   settingsView() {
     const a = this.account, r = this.record;
+    const slip132 = accountSlip132(a);
     const gap = h("input", { id: "gap", type: "number", min: "1", max: "1000", value: String(r.gapLimit) });
     const name = h("input", { id: "rename", type: "text", value: r.label });
     const message = h("div", {});
@@ -19212,7 +19249,7 @@ class App {
         h("dl", {},
           h("dt", {}, "Path"), h("dd", { class: "mono" }, accountPath(a)),
           h("dt", {}, "Fingerprint"), h("dd", { class: "mono" }, a.fingerprint || "none"),
-          h("dt", {}, a.coinType === 0 ? "zpub" : "vpub"), h("dd", { class: "mono" }, serializeXpub(a.node, a.coinType === 0 ? "zpub" : "vpub")),
+          h("dt", {}, slip132.name), h("dd", { class: "mono" }, slip132.key),
           h("dt", {}, "Descriptor"), h("dd", { class: "mono", id: "descriptor" }, accountDescriptor(a))),
         forget),
       h("div", { class: "panel" }, h("h2", {}, "Server"),

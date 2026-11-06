@@ -9,8 +9,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { addressAt } from "./account.js";
 import { NETWORK_INFO } from "./descriptor.js";
-import { MIN_RATE, MAX_RATE, DUST, SelectError, selectCoins } from "./coinselect.js";
-import { fromHex, fromHexReversed, toHex, equal, Writer, DecodeError } from "../vendor/zerogap/psbt/bytes.js";
+import { MIN_RATE, MAX_RATE, DUST, KINDS, SelectError, selectCoins } from "./coinselect.js";
+import { concat, fromHex, fromHexReversed, toHex, equal, Writer, DecodeError } from "../vendor/zerogap/psbt/bytes.js";
 import { addressToScript, classify } from "../vendor/zerogap/psbt/script.js";
 import { parseTx, serializeTx, txid as txidOf } from "../vendor/zerogap/psbt/tx.js";
 import { parsePsbt, serializePsbt, setEntry, GLOBAL, IN, OUT } from "../vendor/zerogap/psbt/psbt.js";
@@ -77,7 +77,7 @@ async function previousOf(coin, client) {
 
 // request: { address, amount (satoshis), sendAll, rate, coins (chosen by
 // hand) | null }.
-// Spend = { txid, tx, inputs: [Coin + previous], outputs: [{ address, value, script, change: entry | null }],
+// Spend = { txid (of the finished transaction), unsignedTxid, tx, inputs: [Coin + previous], outputs: [{ address, value, script, change: entry | null }],
 //           fee, vsize, amount, rate, dropped, skipped }
 export async function buildSpend(account, scan, request, client, { random = randomBelow } = {}) {
   if (!account.fingerprint) {
@@ -95,7 +95,7 @@ export async function buildSpend(account, scan, request, client, { random = rand
   let chosen;
   try {
     chosen = selectCoins({ coins: request.coins || scan.coins, amount: request.amount, scripts: [script.length], rate,
-      manual: Boolean(request.coins), sendAll });
+      manual: Boolean(request.coins), sendAll, kind: KINDS[account.script] });
   } catch (e) {
     if (e instanceof SelectError) throw new BuildError(e.message);
     throw e;
@@ -115,8 +115,16 @@ export async function buildSpend(account, scan, request, client, { random = rand
   const tx = { version: 2, locktime: tipHeight, segwit: false,
     inputs: inputs.map((c) => ({ txid: fromHexReversed(c.txid), vout: c.vout, scriptSig: new Uint8Array(0), sequence: SEQUENCE_RBF, witness: [] })),
     outputs: outputs.map((o) => ({ value: o.value, script: o.script })) };
-  return { txid: txidOf(tx), tx, inputs, outputs, fee: chosen.fee, vsize: chosen.vsize, amount: chosen.amount, rate,
+  return { txid: finishedTxid(tx, inputs), unsignedTxid: txidOf(tx), tx, inputs, outputs, fee: chosen.fee, vsize: chosen.vsize, amount: chosen.amount, rate,
     dropped: chosen.dropped, skipped: chosen.skipped };
+}
+
+// The txid once signed. Witnesses don't count, but a P2SH-P2WPKH input's
+// scriptSig does, and it is known already: one push of the redeemScript. So a
+// signed transaction with any other scriptSig isn't the one built here.
+function finishedTxid(tx, inputs) {
+  const scriptSig = (c) => (c.entry.redeemScript ? concat([Uint8Array.of(c.entry.redeemScript.length), c.entry.redeemScript]) : new Uint8Array(0));
+  return txidOf({ ...tx, inputs: tx.inputs.map((input, i) => ({ ...input, scriptSig: scriptSig(inputs[i]) })) });
 }
 
 // PSBT_*_BIP32_DERIVATION's value: the master fingerprint, then the path.
@@ -143,11 +151,13 @@ export function psbtBytes(account, spend, { includePrevious = true } = {}) {
     const map = { entries: [] };
     if (includePrevious) setEntry(map, IN.NON_WITNESS_UTXO, NO_KEY, c.previous);
     setEntry(map, IN.WITNESS_UTXO, NO_KEY, witnessUtxo(c));
+    if (c.entry.redeemScript) setEntry(map, IN.REDEEM_SCRIPT, NO_KEY, c.entry.redeemScript);
     setEntry(map, IN.BIP32_DERIVATION, c.entry.pubkey, derivationValue(account, c.entry));
     return map;
   });
   const outputs = spend.outputs.map((o) => {
     const map = { entries: [] };
+    if (o.change?.redeemScript) setEntry(map, OUT.REDEEM_SCRIPT, NO_KEY, o.change.redeemScript);
     if (o.change) setEntry(map, OUT.BIP32_DERIVATION, o.change.pubkey, derivationValue(account, o.change));
     return map;
   });

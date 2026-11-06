@@ -1,17 +1,18 @@
 // What the user imports: an account's public key, as a descriptor or a zpub.
 //
 //   wpkh([73c5da0a/84h/0h/0h]xpub…/<0;1>/*)#checksum      (BITCOIN.md, "Public key export")
-//   zpub…  (vpub… on test networks)
+//   sh(wpkh([73c5da0a/49h/0h/0h]xpub…/<0;1>/*))#checksum
+//   zpub… or ypub…  (vpub…, upub… on test networks)
 //
 // parseAccount() -> { network, script, purpose, coinType, account, node (the
 // account's public BIP-32 node), fingerprint (hex, the master's) | null,
 // warnings: [string] }
 //
-// W1 takes P2WPKH accounts only. Private keys are refused by what they look
+// P2WPKH and P2SH-P2WPKH accounts. Private keys are refused by what they look
 // like, before anything else reads them, and an error never repeats its input.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { HARDENED, parseXpub, serializeXpub, Bip32Error } from "../vendor/zerogap/bip32.js";
+import { HARDENED, parseXpub, serializeXpub, versionFor, Bip32Error } from "../vendor/zerogap/bip32.js";
 
 export class ImportError extends Error {
   constructor(message) {
@@ -24,6 +25,11 @@ export const NETWORK_INFO = {
   mainnet: { name: "Mainnet", lib: "mainnet", coinType: 0 },
   signet: { name: "Signet", lib: "testnet", coinType: 1 },
   testnet4: { name: "Testnet4", lib: "testnet", coinType: 1 },
+};
+
+export const SCRIPT_INFO = {
+  p2wpkh: { name: "P2WPKH", purpose: 84, wrap: (key) => `wpkh(${key})` },
+  "p2sh-p2wpkh": { name: "P2SH-P2WPKH", purpose: 49, wrap: (key) => `sh(wpkh(${key}))` },
 };
 
 // BIP-380's checksum.
@@ -84,7 +90,7 @@ function accountOf(node) {
     throw new ImportError(`This key is at depth ${node.depth}, not an account's (depth 3). A master xpub can't stand in: ` +
       "account paths are hardened, so a watch-only wallet can't derive them from it.");
   }
-  if (node.childNumber < HARDENED) throw new ImportError("This key's account number isn't hardened, so it isn't a BIP-84 account key.");
+  if (node.childNumber < HARDENED) throw new ImportError("This key's account number isn't hardened, so it isn't an account key.");
   return node.childNumber - HARDENED;
 }
 
@@ -98,8 +104,8 @@ function checkNetwork(keyNetwork, network) {
   return info;
 }
 
-const accountFields = (network, info, account, node, fingerprint, warnings) => ({
-  network, script: "p2wpkh", purpose: 84, coinType: info.coinType, account, node, fingerprint, warnings });
+const accountFields = (network, script, info, account, node, fingerprint, warnings) => ({
+  network, script, purpose: SCRIPT_INFO[script].purpose, coinType: info.coinType, account, node, fingerprint, warnings });
 
 function parseFingerprint(text) {
   const s = (text || "").trim().toLowerCase();
@@ -110,14 +116,13 @@ function parseFingerprint(text) {
 
 function parseExtendedKey(text, network, fingerprint) {
   const prefix = text.slice(0, 4);
-  if (prefix === "ypub" || prefix === "upub") throw new ImportError("Nested segwit accounts (ypub, upub) aren't supported yet.");
   if (prefix === "xpub" || prefix === "tpub") {
-    throw new ImportError(`A bare ${prefix} doesn't say what kind of addresses it makes. Import the descriptor, or the zpub.`);
+    throw new ImportError(`A bare ${prefix} doesn't say what kind of addresses it makes. Import the descriptor, or the zpub or ypub.`);
   }
-  if (prefix !== "zpub" && prefix !== "vpub") throw new ImportError("This isn't a descriptor or a zpub.");
+  if (!["zpub", "vpub", "ypub", "upub"].includes(prefix)) throw new ImportError("This isn't a descriptor, a zpub or a ypub.");
   const key = readKey(text);
   const info = checkNetwork(key.network, network);
-  return accountFields(network, info, accountOf(key.node), key.node, fingerprint, []);
+  return accountFields(network, key.script, info, accountOf(key.node), key.node, fingerprint, []);
 }
 
 function parseDescriptor(text, network, fingerprintGiven) {
@@ -129,10 +134,13 @@ function parseDescriptor(text, network, fingerprintGiven) {
   } else if (text.slice(hash + 1) !== descriptorChecksum(body)) {
     throw new ImportError("The descriptor's checksum is wrong: it was changed or mistyped.");
   }
-  if (/^(sh|pkh|tr|wsh)\(/.test(body)) throw new ImportError("Only wpkh(…) accounts are supported for now.");
-  const m = /^wpkh\((?:\[([0-9a-fA-F]{8})((?:\/\d+['h]?)*)\])?([1-9A-HJ-NP-Za-km-z]+)\/<0;1>\/\*\)$/.exec(body);
+  const nested = body.startsWith("sh(wpkh(");
+  const script = nested ? "p2sh-p2wpkh" : "p2wpkh";
+  const inner = nested && body.endsWith(")") ? body.slice(3, -1) : body;
+  if (/^(sh|pkh|tr|wsh)\(/.test(inner)) throw new ImportError("Only wpkh(…) and sh(wpkh(…)) accounts are supported for now.");
+  const m = /^wpkh\((?:\[([0-9a-fA-F]{8})((?:\/\d+['h]?)*)\])?([1-9A-HJ-NP-Za-km-z]+)\/<0;1>\/\*\)$/.exec(inner);
   if (!m) {
-    if (/\/[01]\/\*\)$/.test(body)) throw new ImportError("This descriptor covers one chain only. The wallet needs both: …/<0;1>/*.");
+    if (/\/[01]\/\*\)+$/.test(body)) throw new ImportError("This descriptor covers one chain only. The wallet needs both: …/<0;1>/*.");
     throw new ImportError("This descriptor isn't of the form wpkh([fingerprint/84h/0h/0h]xpub…/<0;1>/*).");
   }
   const [, fp, origin, xpub] = m;
@@ -142,21 +150,21 @@ function parseDescriptor(text, network, fingerprintGiven) {
   const info = checkNetwork(key.network, network);
   const account = accountOf(key.node);
   if (fp) {
-    const want = [84, info.coinType, account].map((n) => `/${n}h`).join("");
+    const want = [SCRIPT_INFO[script].purpose, info.coinType, account].map((n) => `/${n}h`).join("");
     if (origin.replace(/'/g, "h") !== want) {
       throw new ImportError(`The descriptor's origin should be ${want.slice(1)}, for this key on ${info.name}.`);
     }
     const given = fingerprintGiven;
     if (given && given !== fp.toLowerCase()) throw new ImportError("The descriptor's fingerprint isn't the one you typed.");
-    return accountFields(network, info, account, key.node, fp.toLowerCase(), warnings);
+    return accountFields(network, script, info, account, key.node, fp.toLowerCase(), warnings);
   }
-  return accountFields(network, info, account, key.node, fingerprintGiven, warnings);
+  return accountFields(network, script, info, account, key.node, fingerprintGiven, warnings);
 }
 
 // `fingerprint`: the master's, as typed, or "" when the import doesn't say.
 export function parseAccount(text, network, fingerprint = "") {
   const s = String(text).trim();
-  if (s === "") throw new ImportError("Paste a descriptor or a zpub.");
+  if (s === "") throw new ImportError("Paste a descriptor, a zpub or a ypub.");
   if (looksPrivate(s)) throw new ImportError("This is a private key or a seed. Nothing was kept. GapWallet only ever takes public keys.");
   const fp = parseFingerprint(fingerprint);
   return /^[a-z]+\(/.test(s) ? parseDescriptor(s, network, fp) : parseExtendedKey(s, network, fp);
@@ -165,9 +173,15 @@ export function parseAccount(text, network, fingerprint = "") {
 // The account's descriptor, with origin (when known) and checksum, as text.
 export function accountDescriptor(a) {
   const key = serializeXpub(a.node, a.coinType === 0 ? "xpub" : "tpub");
-  const origin = a.fingerprint ? `[${a.fingerprint}/84h/${a.coinType}h/${a.account}h]` : "";
-  const body = `wpkh(${origin}${key}/<0;1>/*)`;
+  const origin = a.fingerprint ? `[${a.fingerprint}/${a.purpose}h/${a.coinType}h/${a.account}h]` : "";
+  const body = SCRIPT_INFO[a.script].wrap(`${origin}${key}/<0;1>/*`);
   return `${body}#${descriptorChecksum(body)}`;
+}
+
+// The account's key as Electrum shows it: { name: "zpub", key }.
+export function accountSlip132(a) {
+  const name = versionFor(a.script, NETWORK_INFO[a.network].lib);
+  return { name, key: serializeXpub(a.node, name) };
 }
 
 export const accountPath = (a) => `m/${a.purpose}'/${a.coinType}'/${a.account}'`;
