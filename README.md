@@ -1,6 +1,6 @@
 # GapWallet
 
-The online half of [zerogap](../lvglzero): a watch-only Bitcoin wallet in one
+The online half of [ZeroGap](../lvglzero): a watch-only Bitcoin wallet in one
 HTML file. It holds public keys only. It watches an account, builds PSBTs for
 the offline signer, shows them as QR codes, reads the signed transaction back
 with the webcam, and broadcasts it through an
@@ -27,7 +27,7 @@ nothing to install.
 
 ## Status
 
-Milestones W1 and W2, and the first part of W3, of the plan in zerogap's
+Milestones W1 and W2, the first part of W3, and W4, of the plan in ZeroGap's
 `docs/plans/BITCOIN.md`.
 
 - P2WPKH (`wpkh(…)`, zpub, vpub) and P2SH-P2WPKH (`sh(wpkh(…))`, ypub, upub)
@@ -37,6 +37,8 @@ Milestones W1 and W2, and the first part of W3, of the plan in zerogap's
   BBQr series; signed transactions come back the same ways (`docs/ESPLORA.md`,
   "QR codes").
 - One recipient per transaction.
+- English and Brazilian Portuguese, chosen in the upper right corner. Numbers
+  are written the language's way (0.5 or 0,5); see "Languages".
 
 ## How it's put together
 
@@ -55,12 +57,12 @@ Milestones W1 and W2, and the first part of W3, of the plan in zerogap's
 
 ```sh
 node tools/build.mjs        # writes gapwallet.html
-tools/vendor.py --check     # checks vendor/ against its manifest and zerogap's commit
+tools/vendor.py --check     # checks vendor/ against its manifest and ZeroGap's commit
 npm install                 # only for the page tests: puppeteer-core drives Chromium
 npm test
 ```
 
-The tests need the zerogap repository next to this one (or `ZEROGAP_DIR`):
+The tests need the ZeroGap repository next to this one (or `ZEROGAP_DIR`):
 PSBTs built here are signed by the real signer's library, not a second one.
 Node 18 or later; `npm test` needs Chromium for the page tests.
 
@@ -74,9 +76,26 @@ Node 18 or later; `npm test` needs Chromium for the page tests.
   (a request to another origin must fail), and that nothing is contacted before
   a server is chosen.
 
+## Languages
+
+Text is written in English where it is used, and that English is the key:
+`tr("Fee rate (sat/vB, {min} to {max})", { min, max })` (`src/i18n.js`). Each
+other language is a table from key to text, `src/lang-pt-BR.js` for the first.
+`node tools/i18n-keys.mjs` lists every key, and `tests/i18n.test.mjs` fails if a
+key is missing from a table, a table has a key no longer used, or the `{names}`
+differ. To add a language, add a table and a line in `LANGUAGES`.
+
+The language only changes how numbers are written, never which amount is meant.
+`src/amount.js` reads what's typed so that no mix-up of marks becomes a
+different amount: "1.000" or "12,500" could be one or a thousand, so the page
+refuses them, in either language, unless the mark is the language's own decimal
+mark. A single mark that can't be separating thousands, as in "0.001" or "1,5",
+is a decimal point whichever the language, since amounts are often copied from
+elsewhere. Below the box the page shows the amount it read, in full.
+
 ## Security
 
-- **No private keys.** The private-key functions the zerogap libraries ask for
+- **No private keys.** The private-key functions the ZeroGap libraries ask for
   are stubs that throw. A pasted xprv, WIF, seed phrase or codex32 share is
   refused and cleared; nothing is stored.
 - **The signer is the boundary.** It shows what is really spent, from the
@@ -93,6 +112,6 @@ Node 18 or later; `npm test` needs Chromium for the page tests.
 ## Licence
 
 GPL-3.0-or-later: see `LICENSE`. Bundled libraries keep their own licences,
-all compatible: zerogap's PSBT and BIP-32 libraries (GPL-3.0-or-later), the noble
+all compatible: ZeroGap's PSBT and BIP-32 libraries (GPL-3.0-or-later), the noble
 libraries and qrcode-generator (MIT), jsQR (Apache-2.0). `vendor/MANIFEST.json`
 lists each file; their licence texts are in `vendor/`.

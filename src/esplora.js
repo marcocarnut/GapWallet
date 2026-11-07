@@ -3,6 +3,7 @@
 //
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
+import { tr } from "./i18n.js";
 
 export const GENESIS = {
   mainnet: "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
@@ -52,11 +53,11 @@ export function parseServer(text) {
   try {
     u = new URL(String(text).trim());
   } catch {
-    throw new EsploraError("That isn't a web address.");
+    throw new EsploraError(tr("That isn't a web address."));
   }
-  if (u.protocol !== "https:" && u.protocol !== "http:") throw new EsploraError("A server's address starts with https:// or http://.");
-  if (u.username || u.password) throw new EsploraError("A server's address can't hold a user name or password.");
-  if (u.search || u.hash) throw new EsploraError("A server's address has no query or fragment.");
+  if (u.protocol !== "https:" && u.protocol !== "http:") throw new EsploraError(tr("A server's address starts with https:// or http://."));
+  if (u.username || u.password) throw new EsploraError(tr("A server's address can't hold a user name or password."));
+  if (u.search || u.hash) throw new EsploraError(tr("A server's address has no query or fragment."));
   return { base: u.origin + u.pathname.replace(/\/+$/, ""), origin: u.origin };
 }
 
@@ -139,12 +140,12 @@ export class Esplora {
         if (!failure && !busy) {
           this.succeeded();
           const text = await response.text();
-          if (!response.ok) throw new EsploraError(`The server answered ${response.status}: ${text.slice(0, 200)}`, response.status);
+          if (!response.ok) throw new EsploraError(tr("The server answered {status}: {text}", { status: String(response.status), text: text.slice(0, 200) }), response.status);
           return text;
         }
         if (attempt >= RETRIES) {
-          if (busy) throw new EsploraError(`The server is busy (${response.status}). Try again later.`, response.status);
-          throw new EsploraError(`The server can't be reached, or is limiting requests. Try again later. (${failure.message})`);
+          if (busy) throw new EsploraError(tr("The server is busy ({status}). Try again later.", { status: String(response.status) }), response.status);
+          throw new EsploraError(tr("The server can't be reached, or is limiting requests. Try again later. ({reason})", { reason: failure.message }));
         }
         const after = busy ? Number(response.headers.get("retry-after")) : 0;
         this.failed(after > 0 ? after * 1000 : 1000 * 2 ** attempt);
@@ -157,18 +158,18 @@ export class Esplora {
     try {
       return JSON.parse(text);
     } catch {
-      throw new EsploraError(`The server's answer to ${path.split("/")[1]} isn't JSON.`);
+      throw new EsploraError(tr("The server's answer to {what} isn't JSON.", { what: path.split("/")[1] }));
     }
   }
 
   async checkNetwork(network) {
     const hash = (await this.get("/block-height/0")).trim();
-    if (hash !== GENESIS[network]) throw new EsploraError(`This server isn't on ${network}: its first block is a different one.`);
+    if (hash !== GENESIS[network]) throw new EsploraError(tr("This server isn't on {network}: its first block is a different one.", { network }));
   }
 
   async tipHeight() {
     const n = Number((await this.get("/blocks/tip/height")).trim());
-    if (!Number.isSafeInteger(n) || n < 0) throw new EsploraError("The server gave a bad block height.");
+    if (!Number.isSafeInteger(n) || n < 0) throw new EsploraError(tr("The server gave a bad block height."));
     return n;
   }
 
@@ -197,7 +198,7 @@ export class Esplora {
       await this.pace();
       const r = await this.once("/tx", { method: "POST", headers: { "Content-Type": "text/plain" }, body: hex });
       const text = (await r.text()).trim();
-      if (!r.ok) throw new EsploraError(text.slice(0, 500) || `The server answered ${r.status}.`, r.status);
+      if (!r.ok) throw new EsploraError(text.slice(0, 500) || tr("The server answered {status}.", { status: String(r.status) }), r.status);
       return text;
     });
   }

@@ -14,10 +14,10 @@ test("amounts never go through floating point", () => {
   assert.equal(parseBtc("20999999.97690000"), 2099999997690000);
   assert.equal(parseBtc("0.07"), 7000000); // 0.07 * 1e8 is 7000000.000000001 in floating point
   assert.equal(parseBtc("1.1"), 110000000);
-  for (const bad of ["", ".", "abc", "1e3", "-1", "0.000000001", "21000001", "1,5"]) assert.throws(() => parseBtc(bad), RangeError, bad);
+  for (const bad of ["", ".", "abc", "1e3", "-1", "0.000000001", "21000001", "1,000"]) assert.throws(() => parseBtc(bad), RangeError, bad);
   assert.equal(formatBtc(1), "0.00000001");
   assert.equal(formatBtc(-150000000), "-1.50000000");
-  assert.equal(formatBtc(2099999997690000), "20999999.97690000");
+  assert.equal(formatBtc(2099999997690000), "20,999,999.97690000");
   for (const n of [1, 999, 123456789, 2099999997690000]) assert.equal(parseBtc(formatBtc(n)), n);
 });
 

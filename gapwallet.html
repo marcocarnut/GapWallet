@@ -15,7 +15,7 @@
 
   This one file is the program, unminified. It is built from src/ and vendor/
   by tools/build.mjs; vendor/MANIFEST.json lists each bundled file's origin:
-    zerogap's PSBT and BIP-32 libraries (GPL-3.0-or-later)
+    ZeroGap's PSBT and BIP-32 libraries (GPL-3.0-or-later)
     @noble/hashes, @noble/secp256k1 (MIT, Paul Miller)
     qrcode-generator (MIT, Kazuhiko Arase; "QR Code" is a trademark of DENSO WAVE)
     jsQR (Apache-2.0, Cosmo Wolfe)
@@ -23,7 +23,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-IVYAB8lcS+fUSPfjC90YdVkZHC4dLVqJilbD4SmH7GY='; style-src 'sha256-8RKkCe1K1ezazRjHwMgQxI+dGZBVWQRrwU6EXiT09gc='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-UqzPorPB/6Y/BiWKzWaISKi9WyzFH6Oq3egXJ9TJlpg='; style-src 'sha256-Ya3e9ZBuDYv9w1lVTR6WVBKZvdVEeIAMLuWagfjOh2A='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GapWallet</title>
@@ -117,6 +117,11 @@ ol.steps li[aria-current="step"] { color: var(--ink); font-weight: 600; }
   td.who { white-space: normal; }
   #app { padding: 10px; }
 }
+
+/* "Scanning…" while a scan runs */
+.pulse { animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
 </style>
 </head>
 <body>
@@ -3783,6 +3788,352 @@ function installCrypto() {
 __exports["installCrypto"] = installCrypto;
 }
 
+// ======== src/lang-pt-BR.js ========
+{ const __exports = {}; __modules.set("src/lang-pt-BR.js", __exports);
+// Português (Brasil). Each key is the English text used in src/ (see i18n.js);
+// tests/i18n.test.mjs checks every key is here, with the same {names}.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+const PT_BR = {
+  // amount.js
+  "Enter an amount in BTC, like {example}.": "Digite um valor em BTC, como {example}.",
+  "Write {d} for decimals and {g} between thousands, or leave the thousands separator out.": "Use {d} para os decimais e {g} entre os milhares, ou deixe de fora o separador de milhares.",
+  "“{text}” could be read two ways. Leave out the thousands separator, and write decimals with {d}: 1000 or 1{d}5.": "“{text}” pode ser lido de duas formas. Deixe de fora o separador de milhares e escreva os decimais com {d}: 1000 ou 1{d}5.",
+  "Bitcoin has 8 decimal places at most.": "Bitcoin tem no máximo 8 casas decimais.",
+  "That's more bitcoin than there is.": "Isso é mais bitcoin do que existe.",
+
+  // build.js
+  "That isn't a {network} address.": "Este não é um endereço da {network}.",
+  "The server's copy of transaction {txid} can't be read.": "A cópia da transação {txid} enviada pelo servidor não pode ser lida.",
+  "The server gave the wrong transaction for {txid}. It can't be trusted: nothing was built.": "O servidor enviou a transação errada para {txid}. Ele não é confiável: nada foi montado.",
+  "Transaction {txid} has no output {vout}, though the server says it does.": "A transação {txid} não tem a saída {vout}, embora o servidor diga que tem.",
+  "The server said a coin holds {said} sat, but its transaction says {has}. It can't be trusted: nothing was built.": "O servidor disse que uma moeda tem {said} sat, mas a transação dela diz {has}. Ele não é confiável: nada foi montado.",
+  "A coin the server listed doesn't pay this account's address. It can't be trusted: nothing was built.": "Uma moeda listada pelo servidor não paga um endereço desta conta. Ele não é confiável: nada foi montado.",
+  "This account has no master fingerprint, so a signer couldn't find its keys. Add the fingerprint first.": "Esta conta não tem impressão digital mestra, então um assinador não encontraria as chaves dela. Adicione a impressão digital primeiro.",
+  "A fee rate is between {min} and {max} sat/vB.": "Uma taxa fica entre {min} e {max} sat/vB.",
+  "That kind of address isn't supported.": "Esse tipo de endereço não é suportado.",
+  "Enter an amount.": "Digite um valor.",
+  "That's below the dust limit for this address: {dust} sat.": "Isso está abaixo do limite de poeira (dust) para este endereço: {dust} sat.",
+  "After the fee that's below the dust limit for this address: {dust} sat.": "Depois da taxa, isso fica abaixo do limite de poeira (dust) para este endereço: {dust} sat.",
+  "This account has no master fingerprint.": "Esta conta não tem impressão digital mestra.",
+
+  // coinselect.js
+  "Choose at least one coin.": "Escolha pelo menos uma moeda.",
+  "There are no coins to spend.": "Não há moedas para gastar.",
+  "There are no confirmed coins yet.": "Ainda não há moedas confirmadas.",
+  "These coins don't cover the fee at this rate.": "Estas moedas não cobrem a taxa neste valor por vB.",
+  "The coins you chose don't cover the amount and the fee.": "As moedas que você escolheu não cobrem o valor e a taxa.",
+  "Confirmed coins don't cover the amount and the fee. Another {n} sat is unconfirmed: choose those coins by hand to spend them.": "As moedas confirmadas não cobrem o valor e a taxa. Há mais {n} sat não confirmados: escolha essas moedas manualmente para gastá-las.",
+  "Confirmed coins don't cover the amount and the fee.": "As moedas confirmadas não cobrem o valor e a taxa.",
+  "The fee is {percent}% of the amount sent.": "A taxa é {percent}% do valor enviado.",
+  "{rate} sat/vB is more than 3 times the server's 1-block estimate ({estimate}).": "{rate} sat/vB é mais de 3 vezes a estimativa do servidor para 1 bloco ({estimate}).",
+
+  // descriptor.js
+  "The descriptor holds a character descriptors can't have.": "O descritor contém um caractere que descritores não podem ter.",
+  "That public key can't be read: {reason}.": "Essa chave pública não pode ser lida: {reason}.",
+  "This key is at depth {depth}, not an account's (depth 3). A master xpub can't stand in: account paths are hardened, so a watch-only wallet can't derive them from it.": "Esta chave está na profundidade {depth}, não na de uma conta (profundidade 3). Uma xpub mestra não serve: os caminhos de conta são endurecidos (hardened), então uma carteira somente de observação não consegue derivá-los dela.",
+  "This key's account number isn't hardened, so it isn't an account key.": "O número de conta desta chave não é endurecido (hardened), então ela não é uma chave de conta.",
+  "Choose a network.": "Escolha uma rede.",
+  "This key is for mainnet, but you chose {network}.": "Esta chave é da mainnet, mas você escolheu {network}.",
+  "This key is for a test network, but you chose {network}.": "Esta chave é de uma rede de teste, mas você escolheu {network}.",
+  "A master fingerprint is 8 hexadecimal digits, like 73c5da0a.": "Uma impressão digital mestra tem 8 dígitos hexadecimais, como 73c5da0a.",
+  "A bare {prefix} doesn't say what kind of addresses it makes. Import the descriptor, or the zpub or ypub.": "Uma {prefix} sozinha não diz que tipo de endereço ela gera. Importe o descritor, ou a zpub ou ypub.",
+  "This isn't a descriptor, a zpub or a ypub.": "Isto não é um descritor, uma zpub nem uma ypub.",
+  "The descriptor had no checksum, so a typing mistake in its fingerprint wouldn't show.": "O descritor não tinha checksum, então um erro de digitação na impressão digital não apareceria.",
+  "The descriptor's checksum is wrong: it was changed or mistyped.": "O checksum do descritor está errado: ele foi alterado ou digitado errado.",
+  "Only wpkh(…) and sh(wpkh(…)) accounts are supported for now.": "Por enquanto, só contas wpkh(…) e sh(wpkh(…)) são suportadas.",
+  "This descriptor covers one chain only. The wallet needs both: …/<0;1>/*.": "Este descritor cobre só uma cadeia. A carteira precisa das duas: …/<0;1>/*.",
+  "This descriptor isn't of the form wpkh([fingerprint/84h/0h/0h]xpub…/<0;1>/*).": "Este descritor não tem a forma wpkh([fingerprint/84h/0h/0h]xpub…/<0;1>/*).",
+  "A descriptor holds an xpub or tpub, not a {prefix}.": "Um descritor contém uma xpub ou tpub, não uma {prefix}.",
+  "The descriptor's origin should be {origin}, for this key on {network}.": "A origem do descritor deveria ser {origin}, para esta chave na {network}.",
+  "The descriptor's fingerprint isn't the one you typed.": "A impressão digital do descritor não é a que você digitou.",
+  "Paste a descriptor, a zpub or a ypub.": "Cole um descritor, uma zpub ou uma ypub.",
+  "This is a private key or a seed. Nothing was kept. GapWallet only ever takes public keys.": "Isto é uma chave privada ou uma semente. Nada foi guardado. A GapWallet só aceita chaves públicas.",
+
+  // esplora.js
+  "That isn't a web address.": "Isso não é um endereço web.",
+  "A server's address starts with https:// or http://.": "O endereço de um servidor começa com https:// ou http://.",
+  "A server's address can't hold a user name or password.": "O endereço de um servidor não pode conter usuário ou senha.",
+  "A server's address has no query or fragment.": "O endereço de um servidor não tem parâmetros (?) nem fragmento (#).",
+  "The server answered {status}: {text}": "O servidor respondeu {status}: {text}",
+  "The server is busy ({status}). Try again later.": "O servidor está ocupado ({status}). Tente de novo mais tarde.",
+  "The server can't be reached, or is limiting requests. Try again later. ({reason})": "Não foi possível falar com o servidor, ou ele está limitando as requisições. Tente de novo mais tarde. ({reason})",
+  "The server's answer to {what} isn't JSON.": "A resposta do servidor para {what} não é JSON.",
+  "This server isn't on {network}: its first block is a different one.": "Este servidor não está na {network}: o primeiro bloco dele é outro.",
+  "The server gave a bad block height.": "O servidor informou uma altura de bloco inválida.",
+  "The server answered {status}.": "O servidor respondeu {status}.",
+
+  // qr.js, scan.js, signed.js
+  "The camera can't be opened: {reason}": "Não foi possível abrir a câmera: {reason}",
+  "Asking about receive addresses…": "Consultando os endereços de recebimento…",
+  "Asking about change addresses…": "Consultando os endereços de troco…",
+  "Fetching coins and history…": "Buscando moedas e histórico…",
+  "This transaction isn't signed yet.": "Esta transação ainda não está assinada.",
+  "This series holds a {kind} file, not a transaction.": "Esta série contém um arquivo {kind}, não uma transação.",
+  "This series holds an unknown file, not a transaction.": "Esta série contém um arquivo desconhecido, não uma transação.",
+  "This series can't be read, so it was started over: {reason}": "Não foi possível ler esta série, então a leitura recomeçou: {reason}",
+  "The file is empty.": "O arquivo está vazio.",
+  "The file is too big to be a transaction.": "O arquivo é grande demais para ser uma transação.",
+  "This file isn't a transaction: {reason}": "Este arquivo não é uma transação: {reason}",
+  "This file has {have} of the series' {total} codes.": "Este arquivo tem {have} dos {total} códigos da série.",
+  "This series doesn't hold text, so it isn't a public key.": "Esta série não contém texto, então não é uma chave pública.",
+
+  // ui.js: privacy
+  "Who": "Quem",
+  "What they learn": "O que fica sabendo",
+  "The Esplora server": "O servidor Esplora",
+  "Every address of this account, asked in a burst from one IP address and so linked together: the wallet's balance and whole history, and when you open it. Each transaction you send, before anyone else sees it, and the IP that sent it.": "Todos os endereços desta conta, consultados de uma vez a partir de um único IP e, portanto, ligados entre si: o saldo e todo o histórico da carteira, e quando você a abre. Cada transação que você envia, antes de qualquer outra pessoa vê-la, e o IP que a enviou.",
+  "Network observers": "Quem observa a rede",
+  "With HTTPS, that this page talks to that server, not what it asks.": "Com HTTPS, que esta página fala com esse servidor, mas não o que ela pergunta.",
+  "The site serving this page": "O site que serve esta página",
+  "That the page was loaded. Nothing else: no request goes to it. Better still, run the file from disk or your own server.": "Que a página foi carregada. Nada mais: nenhuma requisição vai para ele. Melhor ainda: abra o arquivo do disco ou do seu próprio servidor.",
+  "The camera": "A câmera",
+  "Nothing leaves the page: frames are decoded here and never sent.": "Nada sai da página: as imagens são decodificadas aqui e nunca enviadas.",
+
+  // ui.js: header and tabs
+  "Account": "Conta",
+  "Add an account…": "Adicionar uma conta…",
+  "Language": "Idioma",
+  "watch-only": "somente observação",
+  "Scanning…": "Verificando…",
+  "Refresh": "Atualizar",
+  "Overview": "Visão geral",
+  "Receive": "Receber",
+  "Send": "Enviar",
+  "Settings": "Configurações",
+
+  // ui.js: import
+  "Account {n}": "Conta {n}",
+  "Add this account": "Adicionar esta conta",
+  "Master fingerprint": "Impressão digital mestra",
+  "none yet": "nenhuma ainda",
+  "Without the master fingerprint this account is watch-only: you'll see its balance and history, but can't build transactions until you add it. The signer shows it with the public key.": "Sem a impressão digital mestra, esta conta é somente de observação: você vê o saldo e o histórico, mas não pode montar transações até adicioná-la. O assinador a mostra junto com a chave pública.",
+  "Its first addresses": "Os primeiros endereços",
+  "Compare these with the device that made the key, before you trust them.": "Compare-os com o dispositivo que gerou a chave antes de confiar neles.",
+  "Read {have} of {total} codes…": "Lidos {have} de {total} códigos…",
+  "Read it with the camera": "Ler com a câmera",
+  "Add an account": "Adicionar uma conta",
+  "GapWallet only ever holds public keys. Nothing here is sent anywhere: the page contacts no server until you choose one.": "A GapWallet só guarda chaves públicas. Nada daqui é enviado a lugar nenhum: a página não contata nenhum servidor até você escolher um.",
+  "Network": "Rede",
+  "Descriptor, zpub or ypub": "Descritor, zpub ou ypub",
+  "Master fingerprint (a descriptor already has it)": "Impressão digital mestra (um descritor já a tem)",
+  "Name": "Nome",
+  "Cancel": "Cancelar",
+
+  // ui.js: server
+  "An Esplora server answers for this {network} account. There is no default: it's your choice, because of what the server learns.": "Um servidor Esplora responde por esta conta da {network}. Não há padrão: a escolha é sua, por causa do que o servidor fica sabendo.",
+  "Use {host}": "Usar {host}",
+  "Or your own server": "Ou o seu próprio servidor",
+  "Use this server": "Usar este servidor",
+  "Choose a server": "Escolha um servidor",
+  "Checking the server…": "Verificando o servidor…",
+  "The server is slowing us down: waiting {seconds} s…": "O servidor está nos segurando: aguardando {seconds} s…",
+
+  // ui.js: fingerprint
+  "Watch-only: no master fingerprint.": "Somente observação: sem impressão digital mestra.",
+  "You can see this account, but a signer couldn't find its keys in a transaction built here. The device that made the key shows the fingerprint with it.": "Você pode ver esta conta, mas um assinador não encontraria as chaves dela numa transação montada aqui. O dispositivo que gerou a chave mostra a impressão digital junto com ela.",
+  "Save fingerprint": "Salvar impressão digital",
+
+  // ui.js: overview
+  "Balance": "Saldo",
+  "and {amount} unconfirmed": "e {amount} não confirmados",
+  "History": "Histórico",
+  "Nothing yet.": "Nada ainda.",
+  "When": "Quando",
+  "What": "O quê",
+  "Amount (BTC)": "Valor (BTC)",
+  "unconfirmed": "não confirmada",
+  "block {height}": "bloco {height}",
+  "{n} conf.": "{n} conf.",
+  "fee {amount}": "taxa {amount}",
+  "Received": "Recebido",
+  "Sent": "Enviado",
+  "Moved within this account": "Movido dentro desta conta",
+
+  // ui.js: receive
+  "Addresses show once the scan has checked which are used.": "Os endereços aparecem depois que a verificação descobrir quais já foram usados.",
+  "Copy": "Copiar",
+  "Next addresses": "Próximos endereços",
+  "The wallet doesn't record which addresses you've given out. If you hand out more than the gap limit ({gap}) with none paid, a later payment can fall past the scan: raise the gap limit in Settings to see it.": "A carteira não registra quais endereços você já passou adiante. Se você passar mais endereços do que o limite de intervalo ({gap}) sem que nenhum seja pago, um pagamento posterior pode ficar além da verificação: aumente o limite de intervalo nas Configurações para vê-lo.",
+
+  // ui.js: send
+  "Sending needs a finished scan.": "Para enviar, a verificação precisa terminar.",
+  "1 Details": "1 Detalhes",
+  "2 Review": "2 Revisão",
+  "3 Sign externally": "3 Assinar externamente",
+  "4 Read back": "4 Ler de volta",
+  "5 Sent": "5 Enviado",
+  "Fetching estimates…": "Buscando estimativas…",
+  "{target}: {rate} sat/vB": "{target}: {rate} sat/vB",
+  "next block": "próximo bloco",
+  "3 blocks": "3 blocos",
+  "about an hour": "cerca de uma hora",
+  "about a day": "cerca de um dia",
+  "The server gave no fee estimates: type a rate.": "O servidor não deu estimativas de taxa: digite um valor.",
+  "No coins yet.": "Nenhuma moeda ainda.",
+  "Spend this coin": "Gastar esta moeda",
+  "Review": "Revisar",
+  "Pay to": "Pagar para",
+  "Send everything (no change)": "Enviar tudo (sem troco)",
+  "Fee rate (sat/vB, {min} to {max})": "Taxa (sat/vB, de {min} a {max})",
+  "Choose coins by hand": "Escolher moedas manualmente",
+  "Exactly the ticked coins are spent, confirmed or not. With none ticked, the wallet chooses among confirmed coins.": "Exatamente as moedas marcadas são gastas, confirmadas ou não. Sem nenhuma marcada, a carteira escolhe entre as moedas confirmadas.",
+  "Enter a fee rate.": "Digite uma taxa.",
+  "Prepare for Signing": "Preparar para Assinatura",
+  "Pay": "Pagar",
+  "To": "Para",
+  "Fee": "Taxa",
+  "{amount} ({vsize} vB at {rate} sat/vB)": "{amount} ({vsize} vB a {rate} sat/vB)",
+  "Change": "Troco",
+  "{amount} to {address}": "{amount} para {address}",
+  "Spends": "Gasta",
+  "{n} sat that would have been change is too small to keep, and goes to the fee.": "{n} sat que seriam troco são pouco demais para guardar e vão para a taxa.",
+  "{n} coin was left out: it's worth less than it costs to spend at this rate.": "{n} moeda ficou de fora: ela vale menos do que custa gastá-la nesta taxa.",
+  "{n} coins were left out: they're worth less than they cost to spend at this rate.": "{n} moedas ficaram de fora: elas valem menos do que custa gastá-las nesta taxa.",
+  "I've seen this, and it's what I want.": "Eu vi isto, e é o que eu quero.",
+  "The signer shows all of this again, from the transaction itself. Trust what it shows.": "O assinador mostra tudo isto de novo, a partir da própria transação. Confie no que ele mostra.",
+  "Back": "Voltar",
+
+  // ui.js: sign externally
+  "Sign it Externally": "Assine Externamente",
+  "This wallet is designed to be used with external signing apps — below you can export the prepared transaction in various formats to the signing app of your choice.": "Esta carteira foi feita para ser usada com aplicativos de assinatura externos — abaixo você pode exportar a transação preparada em vários formatos para o aplicativo de assinatura de sua escolha.",
+  "PSBT: {n} bytes": "PSBT: {n} bytes",
+  "One code (Base43: Electrum, and ZeroGap's signer)": "Um código (Base43: Electrum e o assinador do ZeroGap)",
+  "BBQr: a series of codes (ZeroGap's signer, Coldcard, Sparrow)": "BBQr: uma série de códigos (assinador do ZeroGap, Coldcard, Sparrow)",
+  "This PSBT doesn't fit in one QR code: {n} characters, {max} at most. It goes out as a series. Electrum doesn't read those: for Electrum, save the PSBT as a file.": "Esta PSBT não cabe em um único código QR: {n} caracteres, no máximo {max}. Ela sai como uma série. O Electrum não lê séries: para o Electrum, salve a PSBT como arquivo.",
+  "{n} characters, QR version {version}": "{n} caracteres, QR versão {version}",
+  "This code is dense. If the camera can't read it, enlarge the window or use a series.": "Este código é denso. Se a câmera não conseguir lê-lo, aumente a janela ou use uma série.",
+  "The PSBT as text or a file": "A PSBT como texto ou arquivo",
+  "Copy Base64": "Copiar Base64",
+  "Save .psbt": "Salvar .psbt",
+  "It's signed: read it back": "Está assinada: ler de volta",
+  "This PSBT is too big even for a series of codes. Save it as a file instead.": "Esta PSBT é grande demais até para uma série de códigos. Salve-a como arquivo.",
+  "Code {at} of {n}": "Código {at} de {n}",
+  "Play": "Continuar",
+  "Pause": "Pausar",
+  "BBQr, {encoding}: {n} code of QR version {version}": "BBQr, {encoding}: {n} código de QR versão {version}",
+  "BBQr, {encoding}: {n} codes of QR version {version}": "BBQr, {encoding}: {n} códigos de QR versão {version}",
+  "compressed": "comprimido",
+  "base32": "base32",
+  "hex": "hex",
+  "Codes, up to": "Códigos, até",
+  "Speed": "Velocidade",
+  "fast": "rápida",
+  "normal": "normal",
+  "slow": "lenta",
+  "very slow": "muito lenta",
+  "If the camera misses codes, use more of them (each is simpler) or slow down. A code it misses comes round again.": "Se a câmera perder códigos, use mais códigos (cada um fica mais simples) ou diminua a velocidade. Um código perdido volta a aparecer.",
+
+  // ui.js: read back and broadcast
+  "Or paste the signed transaction: hex, Base64 or Base43": "Ou cole a transação assinada: hex, Base64 ou Base43",
+  "Read {have} of {total} codes. Keep the series in view.": "Lidos {have} de {total} códigos. Mantenha a série à vista.",
+  "This is a PSBT with {signed} of {total} inputs signed. It needs its other signatures: take it to the signer holding the other keys.": "Esta é uma PSBT com {signed} de {total} entradas assinadas. Faltam as outras assinaturas: leve-a ao assinador que tem as outras chaves.",
+  "This is a PSBT with {signed} of {total} inputs signed, and it isn't the transaction built here. It needs its other signatures: take it to the signer holding the other keys.": "Esta é uma PSBT com {signed} de {total} entradas assinadas, e não é a transação montada aqui. Faltam as outras assinaturas: leve-a ao assinador que tem as outras chaves.",
+  "Start the camera": "Ligar a câmera",
+  "Read the signed transaction": "Ler a transação assinada",
+  "Or paste it": "Ou cole aqui",
+  "Read": "Ler",
+  "Or open a file": "Ou abra um arquivo",
+  "Broadcast": "Transmitir",
+  "Sending…": "Enviando…",
+  "The server refused it, or couldn't be reached: {reason}. It hasn't been retried; broadcasting again is safe.": "O servidor recusou a transação, ou não foi possível falar com ele: {reason}. Não houve nova tentativa; transmitir de novo é seguro.",
+  "This is the transaction built here, signed.": "Esta é a transação montada aqui, assinada.",
+  "This isn't the transaction built here.": "Esta não é a transação montada aqui.",
+  "It has other inputs or outputs than the ones you reviewed. Check them below.": "Ela tem entradas ou saídas diferentes das que você revisou. Confira-as abaixo.",
+  "I know what this transaction is, and want to broadcast it.": "Eu sei que transação é esta e quero transmiti-la.",
+  "Transaction": "Transação",
+  "Output {i}": "Saída {i}",
+  "(no address)": "(sem endereço)",
+  "The server took the transaction.": "O servidor aceitou a transação.",
+  "The server answered with a different transaction id. Check the transaction below on another server.": "O servidor respondeu com outro identificador de transação. Confira a transação abaixo em outro servidor.",
+  "Done": "Concluir",
+
+  // ui.js: settings
+  "Forget this account in this browser?": "Esquecer esta conta neste navegador?",
+  "Yes, forget it": "Sim, esquecer",
+  "Keep it": "Manter",
+  "Forget this account": "Esquecer esta conta",
+  "Gap limit": "Limite de intervalo (gap limit)",
+  "The gap limit is a whole number from 1 to 1000.": "O limite de intervalo é um número inteiro de 1 a 1000.",
+  "Save": "Salvar",
+  "Public key": "Chave pública",
+  "Anyone holding this can see the whole wallet, though they can't spend.": "Quem tiver isto vê a carteira inteira, embora não possa gastar.",
+  "Path": "Caminho",
+  "Fingerprint": "Impressão digital",
+  "none": "nenhuma",
+  "Descriptor": "Descritor",
+  "Server": "Servidor",
+  "Now:": "Agora:",
+};
+
+__exports["PT_BR"] = PT_BR;
+}
+
+// ======== src/i18n.js ========
+{ const __exports = {}; __modules.set("src/i18n.js", __exports);
+// The page's languages. Text is written in English where it is used, and that
+// English is the key: tr("Fee rate {min} to {max}", { min, max }). Another
+// language maps each key to its own text, with the same {names}; a key it lacks
+// shows in English. tests/i18n.test.mjs checks that every key used in src/ is
+// translated, with the same names.
+//
+// Numbers in {names} are written the language's way: grouped thousands, its
+// decimal mark. Amounts the user types are read by amount.js, which never lets
+// the language turn one number into another.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+const { PT_BR } = __mod("src/lang-pt-BR.js");
+
+const LANGUAGES = [["en", "English"], ["pt-BR", "Português (Brasil)"]];
+const TABLES = { en: null, "pt-BR": PT_BR };
+const MARKS = { en: { decimal: ".", group: "," }, "pt-BR": { decimal: ",", group: "." } };
+
+let current = "en";
+
+const language = () => current;
+const marks = () => MARKS[current];
+
+function setLanguage(lang) {
+  current = lang in TABLES ? lang : "en";
+}
+
+// The language to start in: the one chosen before, else the browser's.
+function startLanguage(saved, browser = []) {
+  if (saved in TABLES) return saved;
+  return browser.some((l) => /^pt\b/i.test(l)) ? "pt-BR" : "en";
+}
+
+// A whole number, its thousands grouped: 1,234 or 1.234
+function formatInt(n) {
+  const s = String(Math.abs(Math.trunc(n))).replace(/\B(?=(\d{3})+$)/g, marks().group);
+  return `${n < 0 ? "-" : ""}${s}`;
+}
+
+// A decimal number with at most `places` decimals, as the language writes it.
+function formatDecimal(x, places = 2) {
+  const [whole, frac] = Math.abs(x).toFixed(places).split(".");
+  const trimmed = (frac || "").replace(/0+$/, "");
+  return `${x < 0 ? "-" : ""}${formatInt(Number(whole))}${trimmed ? marks().decimal + trimmed : ""}`;
+}
+
+const show = (v) => (typeof v === "number" ? (Number.isInteger(v) ? formatInt(v) : formatDecimal(v)) : String(v));
+
+function tr(text, params = {}) {
+  const table = TABLES[current];
+  const s = (table && table[text]) || text;
+  return s.replace(/\{(\w+)\}/g, (m, k) => (k in params ? show(params[k]) : m));
+}
+
+// One of two keys by count: plural(n, "{n} code", "{n} codes")
+const plural = (n, one, many, params = {}) => tr(n === 1 ? one : many, { n, ...params });
+
+function formatDate(seconds) {
+  return new Intl.DateTimeFormat(current, { dateStyle: "medium" }).format(new Date(seconds * 1000));
+}
+
+__exports["setLanguage"] = setLanguage; __exports["startLanguage"] = startLanguage; __exports["formatInt"] = formatInt; __exports["formatDecimal"] = formatDecimal; __exports["tr"] = tr; __exports["formatDate"] = formatDate; __exports["LANGUAGES"] = LANGUAGES; __exports["language"] = language; __exports["marks"] = marks; __exports["plural"] = plural;
+}
+
 // ======== src/esplora.js ========
 { const __exports = {}; __modules.set("src/esplora.js", __exports);
 // The Esplora client. docs/ESPLORA.md lists every request; a request that
@@ -3790,6 +4141,7 @@ __exports["installCrypto"] = installCrypto;
 //
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
+const { tr } = __mod("src/i18n.js");
 
 const GENESIS = {
   mainnet: "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
@@ -3839,11 +4191,11 @@ function parseServer(text) {
   try {
     u = new URL(String(text).trim());
   } catch {
-    throw new EsploraError("That isn't a web address.");
+    throw new EsploraError(tr("That isn't a web address."));
   }
-  if (u.protocol !== "https:" && u.protocol !== "http:") throw new EsploraError("A server's address starts with https:// or http://.");
-  if (u.username || u.password) throw new EsploraError("A server's address can't hold a user name or password.");
-  if (u.search || u.hash) throw new EsploraError("A server's address has no query or fragment.");
+  if (u.protocol !== "https:" && u.protocol !== "http:") throw new EsploraError(tr("A server's address starts with https:// or http://."));
+  if (u.username || u.password) throw new EsploraError(tr("A server's address can't hold a user name or password."));
+  if (u.search || u.hash) throw new EsploraError(tr("A server's address has no query or fragment."));
   return { base: u.origin + u.pathname.replace(/\/+$/, ""), origin: u.origin };
 }
 
@@ -3926,12 +4278,12 @@ class Esplora {
         if (!failure && !busy) {
           this.succeeded();
           const text = await response.text();
-          if (!response.ok) throw new EsploraError(`The server answered ${response.status}: ${text.slice(0, 200)}`, response.status);
+          if (!response.ok) throw new EsploraError(tr("The server answered {status}: {text}", { status: String(response.status), text: text.slice(0, 200) }), response.status);
           return text;
         }
         if (attempt >= RETRIES) {
-          if (busy) throw new EsploraError(`The server is busy (${response.status}). Try again later.`, response.status);
-          throw new EsploraError(`The server can't be reached, or is limiting requests. Try again later. (${failure.message})`);
+          if (busy) throw new EsploraError(tr("The server is busy ({status}). Try again later.", { status: String(response.status) }), response.status);
+          throw new EsploraError(tr("The server can't be reached, or is limiting requests. Try again later. ({reason})", { reason: failure.message }));
         }
         const after = busy ? Number(response.headers.get("retry-after")) : 0;
         this.failed(after > 0 ? after * 1000 : 1000 * 2 ** attempt);
@@ -3944,18 +4296,18 @@ class Esplora {
     try {
       return JSON.parse(text);
     } catch {
-      throw new EsploraError(`The server's answer to ${path.split("/")[1]} isn't JSON.`);
+      throw new EsploraError(tr("The server's answer to {what} isn't JSON.", { what: path.split("/")[1] }));
     }
   }
 
   async checkNetwork(network) {
     const hash = (await this.get("/block-height/0")).trim();
-    if (hash !== GENESIS[network]) throw new EsploraError(`This server isn't on ${network}: its first block is a different one.`);
+    if (hash !== GENESIS[network]) throw new EsploraError(tr("This server isn't on {network}: its first block is a different one.", { network }));
   }
 
   async tipHeight() {
     const n = Number((await this.get("/blocks/tip/height")).trim());
-    if (!Number.isSafeInteger(n) || n < 0) throw new EsploraError("The server gave a bad block height.");
+    if (!Number.isSafeInteger(n) || n < 0) throw new EsploraError(tr("The server gave a bad block height."));
     return n;
   }
 
@@ -3984,7 +4336,7 @@ class Esplora {
       await this.pace();
       const r = await this.once("/tx", { method: "POST", headers: { "Content-Type": "text/plain" }, body: hex });
       const text = (await r.text()).trim();
-      if (!r.ok) throw new EsploraError(text.slice(0, 500) || `The server answered ${r.status}.`, r.status);
+      if (!r.ok) throw new EsploraError(text.slice(0, 500) || tr("The server answered {status}.", { status: String(r.status) }), r.status);
       return text;
     });
   }
@@ -4468,6 +4820,7 @@ __exports["Bip32Error"] = Bip32Error; __exports["versionFor"] = versionFor; __ex
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 const { HARDENED, parseXpub, serializeXpub, versionFor, Bip32Error } = __mod("vendor/zerogap/bip32.js");
+const { tr } = __mod("src/i18n.js");
 
 class ImportError extends Error {
   constructor(message) {
@@ -4505,7 +4858,7 @@ function descriptorChecksum(text) {
   let c = 1n, cls = 0, count = 0;
   for (const ch of text) {
     const pos = INPUT_CHARSET.indexOf(ch);
-    if (pos < 0) throw new ImportError("The descriptor holds a character descriptors can't have.");
+    if (pos < 0) throw new ImportError(tr("The descriptor holds a character descriptors can't have."));
     c = polymod(c, pos & 31);
     cls = cls * 3 + (pos >> 5);
     if (++count === 3) {
@@ -4534,7 +4887,7 @@ function readKey(text) {
   try {
     return parseXpub(text);
   } catch (e) {
-    if (e instanceof Bip32Error) throw new ImportError("That public key can't be read: " + e.message + ".");
+    if (e instanceof Bip32Error) throw new ImportError(tr("That public key can't be read: {reason}.", { reason: e.message }));
     throw e;
   }
 }
@@ -4542,19 +4895,18 @@ function readKey(text) {
 // The account the key says it is: depth 3, a hardened child.
 function accountOf(node) {
   if (node.depth !== 3) {
-    throw new ImportError(`This key is at depth ${node.depth}, not an account's (depth 3). A master xpub can't stand in: ` +
-      "account paths are hardened, so a watch-only wallet can't derive them from it.");
+    throw new ImportError(tr("This key is at depth {depth}, not an account's (depth 3). A master xpub can't stand in: account paths are hardened, so a watch-only wallet can't derive them from it.", { depth: node.depth }));
   }
-  if (node.childNumber < HARDENED) throw new ImportError("This key's account number isn't hardened, so it isn't an account key.");
+  if (node.childNumber < HARDENED) throw new ImportError(tr("This key's account number isn't hardened, so it isn't an account key."));
   return node.childNumber - HARDENED;
 }
 
 function checkNetwork(keyNetwork, network) {
   const info = NETWORK_INFO[network];
-  if (!info) throw new ImportError("Choose a network.");
+  if (!info) throw new ImportError(tr("Choose a network."));
   if (keyNetwork !== info.lib) {
-    const has = keyNetwork === "mainnet" ? "mainnet" : "a test network";
-    throw new ImportError(`This key is for ${has}, but you chose ${info.name}.`);
+    throw new ImportError(keyNetwork === "mainnet" ? tr("This key is for mainnet, but you chose {network}.", { network: info.name })
+      : tr("This key is for a test network, but you chose {network}.", { network: info.name }));
   }
   return info;
 }
@@ -4565,16 +4917,16 @@ const accountFields = (network, script, info, account, node, fingerprint, warnin
 function parseFingerprint(text) {
   const s = (text || "").trim().toLowerCase();
   if (s === "") return null;
-  if (!/^[0-9a-f]{8}$/.test(s)) throw new ImportError("A master fingerprint is 8 hexadecimal digits, like 73c5da0a.");
+  if (!/^[0-9a-f]{8}$/.test(s)) throw new ImportError(tr("A master fingerprint is 8 hexadecimal digits, like 73c5da0a."));
   return s;
 }
 
 function parseExtendedKey(text, network, fingerprint) {
   const prefix = text.slice(0, 4);
   if (prefix === "xpub" || prefix === "tpub") {
-    throw new ImportError(`A bare ${prefix} doesn't say what kind of addresses it makes. Import the descriptor, or the zpub or ypub.`);
+    throw new ImportError(tr("A bare {prefix} doesn't say what kind of addresses it makes. Import the descriptor, or the zpub or ypub.", { prefix }));
   }
-  if (!["zpub", "vpub", "ypub", "upub"].includes(prefix)) throw new ImportError("This isn't a descriptor, a zpub or a ypub.");
+  if (!["zpub", "vpub", "ypub", "upub"].includes(prefix)) throw new ImportError(tr("This isn't a descriptor, a zpub or a ypub."));
   const key = readKey(text);
   const info = checkNetwork(key.network, network);
   return accountFields(network, key.script, info, accountOf(key.node), key.node, fingerprint, []);
@@ -4585,32 +4937,32 @@ function parseDescriptor(text, network, fingerprintGiven) {
   const hash = text.lastIndexOf("#");
   const body = hash < 0 ? text : text.slice(0, hash);
   if (hash < 0) {
-    warnings.push("The descriptor had no checksum, so a typing mistake in its fingerprint wouldn't show.");
+    warnings.push(tr("The descriptor had no checksum, so a typing mistake in its fingerprint wouldn't show."));
   } else if (text.slice(hash + 1) !== descriptorChecksum(body)) {
-    throw new ImportError("The descriptor's checksum is wrong: it was changed or mistyped.");
+    throw new ImportError(tr("The descriptor's checksum is wrong: it was changed or mistyped."));
   }
   const nested = body.startsWith("sh(wpkh(");
   const script = nested ? "p2sh-p2wpkh" : "p2wpkh";
   const inner = nested && body.endsWith(")") ? body.slice(3, -1) : body;
-  if (/^(sh|pkh|tr|wsh)\(/.test(inner)) throw new ImportError("Only wpkh(…) and sh(wpkh(…)) accounts are supported for now.");
+  if (/^(sh|pkh|tr|wsh)\(/.test(inner)) throw new ImportError(tr("Only wpkh(…) and sh(wpkh(…)) accounts are supported for now."));
   const m = /^wpkh\((?:\[([0-9a-fA-F]{8})((?:\/\d+['h]?)*)\])?([1-9A-HJ-NP-Za-km-z]+)\/<0;1>\/\*\)$/.exec(inner);
   if (!m) {
-    if (/\/[01]\/\*\)+$/.test(body)) throw new ImportError("This descriptor covers one chain only. The wallet needs both: …/<0;1>/*.");
-    throw new ImportError("This descriptor isn't of the form wpkh([fingerprint/84h/0h/0h]xpub…/<0;1>/*).");
+    if (/\/[01]\/\*\)+$/.test(body)) throw new ImportError(tr("This descriptor covers one chain only. The wallet needs both: …/<0;1>/*."));
+    throw new ImportError(tr("This descriptor isn't of the form wpkh([fingerprint/84h/0h/0h]xpub…/<0;1>/*)."));
   }
   const [, fp, origin, xpub] = m;
   const prefix = xpub.slice(0, 4);
-  if (prefix !== "xpub" && prefix !== "tpub") throw new ImportError(`A descriptor holds an xpub or tpub, not a ${prefix}.`);
+  if (prefix !== "xpub" && prefix !== "tpub") throw new ImportError(tr("A descriptor holds an xpub or tpub, not a {prefix}.", { prefix }));
   const key = readKey(xpub);
   const info = checkNetwork(key.network, network);
   const account = accountOf(key.node);
   if (fp) {
     const want = [SCRIPT_INFO[script].purpose, info.coinType, account].map((n) => `/${n}h`).join("");
     if (origin.replace(/'/g, "h") !== want) {
-      throw new ImportError(`The descriptor's origin should be ${want.slice(1)}, for this key on ${info.name}.`);
+      throw new ImportError(tr("The descriptor's origin should be {origin}, for this key on {network}.", { origin: want.slice(1), network: info.name }));
     }
     const given = fingerprintGiven;
-    if (given && given !== fp.toLowerCase()) throw new ImportError("The descriptor's fingerprint isn't the one you typed.");
+    if (given && given !== fp.toLowerCase()) throw new ImportError(tr("The descriptor's fingerprint isn't the one you typed."));
     return accountFields(network, script, info, account, key.node, fp.toLowerCase(), warnings);
   }
   return accountFields(network, script, info, account, key.node, fingerprintGiven, warnings);
@@ -4619,8 +4971,8 @@ function parseDescriptor(text, network, fingerprintGiven) {
 // `fingerprint`: the master's, as typed, or "" when the import doesn't say.
 function parseAccount(text, network, fingerprint = "") {
   const s = String(text).trim();
-  if (s === "") throw new ImportError("Paste a descriptor, a zpub or a ypub.");
-  if (looksPrivate(s)) throw new ImportError("This is a private key or a seed. Nothing was kept. GapWallet only ever takes public keys.");
+  if (s === "") throw new ImportError(tr("Paste a descriptor, a zpub or a ypub."));
+  if (looksPrivate(s)) throw Object.assign(new ImportError(tr("This is a private key or a seed. Nothing was kept. GapWallet only ever takes public keys.")), { secret: true });
   const fp = parseFingerprint(fingerprint);
   return /^[a-z]+\(/.test(s) ? parseDescriptor(s, network, fp) : parseExtendedKey(s, network, fp);
 }
@@ -4983,6 +5335,7 @@ __exports["addressAt"] = addressAt;
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 const { addressAt } = __mod("src/account.js");
+const { tr } = __mod("src/i18n.js");
 
 const DEFAULT_GAP = 20;
 
@@ -5057,13 +5410,13 @@ async function scanAccount(account, client, { gapLimit = DEFAULT_GAP, onProgress
   const addresses = new Map();
   const say = (text) => onProgress && onProgress(text);
   const tip = await client.tipHeight();
-  say("Asking about receive addresses…");
+  say(tr("Asking about receive addresses…"));
   const nextReceive = await scanChain(account, client, 0, gapLimit, addresses);
-  say("Asking about change addresses…");
+  say(tr("Asking about change addresses…"));
   const nextChange = await scanChain(account, client, 1, gapLimit, addresses);
 
   const used = [...addresses.values()].filter((e) => e.used);
-  say("Fetching coins and history…");
+  say(tr("Fetching coins and history…"));
   const utxoLists = await Promise.all(used.filter((e) => funds(e.stats) > 0).map(async (e) => {
     const list = await client.utxos(e.address);
     return list.map((u) => ({ txid: u.txid, vout: u.vout, value: u.value, confirmed: u.status.confirmed === true,
@@ -5094,6 +5447,7 @@ __exports["historyItem"] = historyItem; __exports["scanAccount"] = scanAccount; 
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 const { compactSizeLength } = __mod("vendor/zerogap/psbt/bytes.js");
+const { formatDecimal, tr } = __mod("src/i18n.js");
 
 const MIN_RATE = 0.1, MAX_RATE = 10000;
 const DUST = { p2wpkh: 294, p2sh: 540, p2pkh: 546, p2wsh: 330, p2tr: 330 };
@@ -5158,19 +5512,19 @@ function settle(inputs, amount, scripts, rate, kind) {
 // sendAll, kind (of KINDS: the account's) } -> settle()'s, plus `amount`, `skipped` (coins worth less than
 // they cost to spend).
 function selectCoins({ coins, amount, scripts, rate, manual = false, sendAll = false, kind = KINDS.p2wpkh }) {
-  if (coins.length === 0) throw new SelectError(manual ? "Choose at least one coin." : "There are no coins to spend.");
+  if (coins.length === 0) throw new SelectError(manual ? tr("Choose at least one coin.") : tr("There are no coins to spend."));
   if (sendAll) {
     const usable = manual ? coins : coins.filter((c) => c.confirmed);
-    if (usable.length === 0) throw new SelectError("There are no confirmed coins yet.");
+    if (usable.length === 0) throw new SelectError(tr("There are no confirmed coins yet."));
     const total = usable.reduce((sum, c) => sum + c.value, 0);
     const vsize = vsizeOf(usable.length, scripts, kind);
     const fee = feeFor(vsize, rate);
-    if (total - fee <= 0) throw new SelectError("These coins don't cover the fee at this rate.");
+    if (total - fee <= 0) throw new SelectError(tr("These coins don't cover the fee at this rate."));
     return { inputs: usable, change: 0, fee, dropped: 0, vsize, amount: total - fee, skipped: 0 };
   }
   if (manual) {
     const got = settle(coins, amount, scripts, rate, kind);
-    if (!got) throw new SelectError("The coins you chose don't cover the amount and the fee.");
+    if (!got) throw new SelectError(tr("The coins you chose don't cover the amount and the fee."));
     return { ...got, amount, skipped: 0 };
   }
 
@@ -5201,15 +5555,15 @@ function selectCoins({ coins, amount, scripts, rate, manual = false, sendAll = f
     const got = settle([...inputs], amount, scripts, rate, kind);
     if (got) return done(got);
   }
-  const held = unconfirmed > 0 ? ` Another ${unconfirmed} sat is unconfirmed: choose those coins by hand to spend them.` : "";
-  throw new SelectError(`Confirmed coins don't cover the amount and the fee.${held}`);
+  throw new SelectError(unconfirmed > 0 ? tr("Confirmed coins don't cover the amount and the fee. Another {n} sat is unconfirmed: choose those coins by hand to spend them.", { n: unconfirmed })
+    : tr("Confirmed coins don't cover the amount and the fee."));
 }
 
 // What the user must acknowledge. `estimate`: the 1-block rate, if known.
 function feeWarnings({ fee, amount, rate, estimate }) {
   const out = [];
-  if (fee > amount * 0.05) out.push(`The fee is ${((fee / amount) * 100).toFixed(1)}% of the amount sent.`);
-  if (estimate && rate > estimate * 3) out.push(`${rate} sat/vB is more than 3 times the server's 1-block estimate (${estimate}).`);
+  if (fee > amount * 0.05) out.push(tr("The fee is {percent}% of the amount sent.", { percent: formatDecimal((fee / amount) * 100, 1) }));
+  if (estimate && rate > estimate * 3) out.push(tr("{rate} sat/vB is more than 3 times the server's 1-block estimate ({estimate}).", { rate, estimate }));
   return out;
 }
 
@@ -5863,6 +6217,7 @@ const { concat, fromHex, fromHexReversed, toHex, equal, Writer, DecodeError } = 
 const { addressToScript, classify } = __mod("vendor/zerogap/psbt/script.js");
 const { parseTx, serializeTx, txid: txidOf } = __mod("vendor/zerogap/psbt/tx.js");
 const { parsePsbt, serializePsbt, setEntry, GLOBAL, IN, OUT } = __mod("vendor/zerogap/psbt/psbt.js");
+const { tr } = __mod("src/i18n.js");
 
 const SEQUENCE_RBF = 0xfffffffd;
 
@@ -5898,7 +6253,7 @@ function paymentScript(address, account) {
   try {
     return addressToScript(address.trim(), net.lib);
   } catch (e) {
-    if (e instanceof DecodeError) throw new BuildError(`That isn't a ${net.name} address.`);
+    if (e instanceof DecodeError) throw new BuildError(tr("That isn't a {network} address.", { network: net.name }));
     throw e;
   }
 }
@@ -5910,16 +6265,16 @@ async function previousOf(coin, client) {
   try {
     tx = parseTx(raw);
   } catch {
-    throw new BuildError(`The server's copy of transaction ${coin.txid} can't be read.`);
+    throw new BuildError(tr("The server's copy of transaction {txid} can't be read.", { txid: coin.txid }));
   }
-  if (txidOf(tx) !== coin.txid) throw new BuildError(`The server gave the wrong transaction for ${coin.txid}. It can't be trusted: nothing was built.`);
+  if (txidOf(tx) !== coin.txid) throw new BuildError(tr("The server gave the wrong transaction for {txid}. It can't be trusted: nothing was built.", { txid: coin.txid }));
   const out = tx.outputs[coin.vout];
-  if (!out) throw new BuildError(`Transaction ${coin.txid} has no output ${coin.vout}, though the server says it does.`);
+  if (!out) throw new BuildError(tr("Transaction {txid} has no output {vout}, though the server says it does.", { txid: coin.txid, vout: coin.vout }));
   if (out.value !== coin.value) {
-    throw new BuildError(`The server said a coin holds ${coin.value} sat, but its transaction says ${out.value}. It can't be trusted: nothing was built.`);
+    throw new BuildError(tr("The server said a coin holds {said} sat, but its transaction says {has}. It can't be trusted: nothing was built.", { said: coin.value, has: out.value }));
   }
   if (!equal(out.script, coin.entry.script)) {
-    throw new BuildError("A coin the server listed doesn't pay this account's address. It can't be trusted: nothing was built.");
+    throw new BuildError(tr("A coin the server listed doesn't pay this account's address. It can't be trusted: nothing was built."));
   }
   return serializeTx(tx, { withWitness: false }); // the txid needs no witnesses, and they would only make the codes bigger
 }
@@ -5930,16 +6285,16 @@ async function previousOf(coin, client) {
 //           fee, vsize, amount, rate, dropped, skipped }
 async function buildSpend(account, scan, request, client, { random = randomBelow } = {}) {
   if (!account.fingerprint) {
-    throw new BuildError("This account has no master fingerprint, so a signer couldn't find its keys. Add the fingerprint first.");
+    throw new BuildError(tr("This account has no master fingerprint, so a signer couldn't find its keys. Add the fingerprint first."));
   }
   const { rate, sendAll = false } = request;
-  if (!(rate >= MIN_RATE && rate <= MAX_RATE)) throw new BuildError(`A fee rate is between ${MIN_RATE} and ${MAX_RATE} sat/vB.`);
+  if (!(rate >= MIN_RATE && rate <= MAX_RATE)) throw new BuildError(tr("A fee rate is between {min} and {max} sat/vB.", { min: MIN_RATE, max: MAX_RATE }));
   const script = paymentScript(request.address, account);
   const type = classify(script).type;
   const dust = DUST[type];
-  if (dust === undefined) throw new BuildError("That kind of address isn't supported.");
-  if (!sendAll && !(Number.isSafeInteger(request.amount) && request.amount > 0)) throw new BuildError("Enter an amount.");
-  if (!sendAll && request.amount < dust) throw new BuildError(`That's below the dust limit for this address: ${dust} sat.`);
+  if (dust === undefined) throw new BuildError(tr("That kind of address isn't supported."));
+  if (!sendAll && !(Number.isSafeInteger(request.amount) && request.amount > 0)) throw new BuildError(tr("Enter an amount."));
+  if (!sendAll && request.amount < dust) throw new BuildError(tr("That's below the dust limit for this address: {dust} sat.", { dust }));
 
   let chosen;
   try {
@@ -5949,7 +6304,7 @@ async function buildSpend(account, scan, request, client, { random = randomBelow
     if (e instanceof SelectError) throw new BuildError(e.message);
     throw e;
   }
-  if (sendAll && chosen.amount < dust) throw new BuildError(`After the fee that's below the dust limit for this address: ${dust} sat.`);
+  if (sendAll && chosen.amount < dust) throw new BuildError(tr("After the fee that's below the dust limit for this address: {dust} sat.", { dust }));
 
   const change = chosen.change > 0 ? addressAt(account, 1, scan.next[1]) : null;
   const previous = await Promise.all(chosen.inputs.map((c) => previousOf(c, client)));
@@ -5993,7 +6348,7 @@ function witnessUtxo(coin) {
 const NO_KEY = new Uint8Array(0);
 
 function psbtBytes(account, spend) {
-  if (!account.fingerprint) throw new BuildError("This account has no master fingerprint.");
+  if (!account.fingerprint) throw new BuildError(tr("This account has no master fingerprint."));
   const global = { entries: [] };
   setEntry(global, GLOBAL.UNSIGNED_TX, NO_KEY, serializeTx(spend.tx, { withWitness: false }));
   const inputs = spend.inputs.map((c) => {
@@ -6664,6 +7019,7 @@ const { readPayload } = __mod("vendor/zerogap/psbt/transport.js");
 const { isPsbt, parsePsbt } = __mod("vendor/zerogap/psbt/psbt.js");
 const { parseTx, txid: txidOf, serializeTx } = __mod("vendor/zerogap/psbt/tx.js");
 const { BBQrError, FILE_TYPES, Joiner, isBBQr } = __mod("vendor/zerogap/bbqr.js");
+const { tr } = __mod("src/i18n.js");
 
 // The most a series may unpack to. A signed transaction is far smaller; this
 // keeps a hostile code from filling memory.
@@ -6680,7 +7036,7 @@ function txResult(bytes, pending) {
   // Every input here is segwit. Legacy accounts (S3) have no witness: this has
   // to change with them.
   if (tx.inputs.some((i) => i.witness.length === 0)) {
-    throw new DecodeError("This transaction isn't signed yet.");
+    throw new DecodeError(tr("This transaction isn't signed yet."));
   }
   const txid = txidOf(tx);
   return { kind: "tx", tx, txid, hex: toHex(serializeTx(tx)), matches: Boolean(pending) && txid === pending.txid };
@@ -6695,7 +7051,7 @@ function readSigned(text, bytes, pending) {
 function fromSeries({ type, bytes }, pending) {
   if (type === "P") return psbtResult(bytes, pending);
   if (type === "T") return txResult(bytes, pending);
-  throw new DecodeError(`This series holds ${FILE_TYPES[type] ? `a ${FILE_TYPES[type]} file` : "an unknown file"}, not a transaction.`);
+  throw new DecodeError(FILE_TYPES[type] ? tr("This series holds a {kind} file, not a transaction.", { kind: FILE_TYPES[type] }) : tr("This series holds an unknown file, not a transaction."));
 }
 
 // Codes as they arrive: whole ones, and the parts of a series in any order,
@@ -6732,7 +7088,7 @@ class SignedReader {
     } catch (e) {
       if (!(e instanceof BBQrError)) throw e;
       this.joiner.reset();
-      throw new DecodeError(`This series can't be read, so it was started over: ${e.message}`);
+      throw new DecodeError(tr("This series can't be read, so it was started over: {reason}", { reason: e.message }));
     }
   }
 }
@@ -6741,24 +7097,24 @@ const isText = (bytes) => bytes.every((b) => b === 9 || b === 10 || b === 13 || 
 
 // The same checks as a code, from a file's bytes.
 function readFile(bytes, pending) {
-  if (bytes.length === 0) throw new DecodeError("The file is empty.");
-  if (bytes.length > MAX_FILE) throw new DecodeError("The file is too big to be a transaction.");
+  if (bytes.length === 0) throw new DecodeError(tr("The file is empty."));
+  if (bytes.length > MAX_FILE) throw new DecodeError(tr("The file is too big to be a transaction."));
   if (isPsbt(bytes)) return psbtResult(bytes, pending);
   if (!isText(bytes)) {
     try {
       return txResult(bytes, pending);
     } catch (e) {
       if (!(e instanceof DecodeError)) throw e;
-      throw new DecodeError(`This file isn't a transaction: ${e.message}`);
+      throw new DecodeError(tr("This file isn't a transaction: {reason}", { reason: e.message }));
     }
   }
   const lines = new TextDecoder().decode(bytes).split(/\s+/).filter(Boolean);
-  if (lines.length === 0) throw new DecodeError("The file is empty.");
+  if (lines.length === 0) throw new DecodeError(tr("The file is empty."));
   if (lines.length === 1 || !lines.every(isBBQr)) return readSigned(lines.join(""), null, pending);
   const reader = new SignedReader(pending);
   let got;
   for (const line of lines) got = reader.add(line);
-  if (got.kind === "progress") throw new DecodeError(`This file has ${got.have} of the series' ${got.total} codes.`);
+  if (got.kind === "progress") throw new DecodeError(tr("This file has {have} of the series' {total} codes.", got));
   return got;
 }
 
@@ -6777,12 +7133,12 @@ class KeyReader {
       if (!step.done) return { have: step.have, total: step.total };
       const { type, bytes } = this.joiner.result();
       this.joiner.reset();
-      if (type !== "U") throw new DecodeError("This series doesn't hold text, so it isn't a public key.");
+      if (type !== "U") throw new DecodeError(tr("This series doesn't hold text, so it isn't a public key."));
       return { text: new TextDecoder().decode(bytes) };
     } catch (e) {
       if (!(e instanceof BBQrError)) throw e;
       this.joiner.reset();
-      throw new DecodeError(`This series can't be read, so it was started over: ${e.message}`);
+      throw new DecodeError(tr("This series can't be read, so it was started over: {reason}", { reason: e.message }));
     }
   }
 }
@@ -19147,6 +19503,7 @@ __modules.set("vendor/jsqr/jsQR.cjs", { default: module.exports }); }
 // SPDX-License-Identifier: GPL-3.0-or-later
 const qrcode = __mod("vendor/qrcode-generator/qrcode.mjs").default;
 const jsQR = __mod("vendor/jsqr/jsQR.cjs").default;
+const { tr } = __mod("src/i18n.js");
 
 // The largest QR code (version 40, error correction L) in alphanumeric mode
 const MAX_ALPHANUMERIC = 4296;
@@ -19207,7 +19564,7 @@ class Scanner {
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } }, audio: false });
     } catch (e) {
-      this.onError(`The camera can't be opened: ${e.message}`);
+      this.onError(tr("The camera can't be opened: {reason}", { reason: e.message }));
       return;
     }
     this.video.srcObject = this.stream;
@@ -19249,28 +19606,76 @@ __exports["makeQr"] = makeQr; __exports["drawQr"] = drawQr; __exports["decodeFra
 { const __exports = {}; __modules.set("src/amount.js", __exports);
 // Amounts, as text and whole satoshis. Never through floating point.
 //
+// Written as the page's language writes numbers: 1,234.5 or 1.234,5. Read so that
+// the language never turns one amount into another: what could be read two ways,
+// like 1.000 (one, or a thousand), is refused rather than guessed. A lone mark
+// that can't be a thousands separator, as in 0.001 or 1,5, is the decimal mark,
+// whichever the language: amounts are often copied from elsewhere.
+//
 // SPDX-License-Identifier: GPL-3.0-or-later
+const { marks, tr } = __mod("src/i18n.js");
+
 const SATS = 100000000;
 const MAX_SATS = 2100000000000000;
 
-function parseBtc(text) {
+const escape = (c) => (c === "." ? "\\." : c);
+
+// "1234.5" from the text as typed, or a RangeError saying why not.
+function normalize(text) {
+  const { decimal: D, group: G } = marks();
   const s = String(text).trim();
-  const m = /^(\d*)(?:\.(\d*))?$/.exec(s);
-  if (s === "" || !m || (m[1] === "" && !m[2])) throw new RangeError("Enter an amount in BTC, like 0.001.");
-  if ((m[2] || "").length > 8) throw new RangeError("Bitcoin has 8 decimal places at most.");
+  const example = { example: `0${D}001` };
+  if (s === "") throw new RangeError(tr("Enter an amount in BTC, like {example}.", example));
+  if (!/^[\d.,]+$/.test(s)) throw new RangeError(tr("Enter an amount in BTC, like {example}.", example));
+  const both = s.includes(",") && s.includes(".");
+  if (both) {
+    const m = new RegExp(`^(\\d{1,3}(?:${escape(G)}\\d{3})*)${escape(D)}(\\d*)$`).exec(s);
+    if (!m) throw new RangeError(tr("Write {d} for decimals and {g} between thousands, or leave the thousands separator out.", { d: D, g: G }));
+    return `${m[1].split(G).join("")}.${m[2]}`;
+  }
+  const mark = s.includes(",") ? "," : s.includes(".") ? "." : null;
+  if (!mark) return s;
+  const pieces = s.split(mark);
+  if (pieces.length === 2) {
+    const [whole, frac] = pieces;
+    if (whole === "" && frac === "") throw new RangeError(tr("Enter an amount in BTC, like {example}.", example));
+    // 1.000 or 12,500: a thousand, or one? Refused, in both languages
+    if (frac.length === 3 && /^[1-9]\d{0,2}$/.test(whole) && mark !== D) {
+      throw new RangeError(tr("“{text}” could be read two ways. Leave out the thousands separator, and write decimals with {d}: 1000 or 1{d}5.", { text: s, d: D }));
+    }
+    return `${whole}.${frac}`; // the language's own mark, or one that can't be thousands
+  }
+  // several of the same mark: only thousands, written properly
+  if (mark === G && new RegExp(`^\\d{1,3}(?:${escape(G)}\\d{3})+$`).test(s)) return pieces.join("");
+  throw new RangeError(tr("Enter an amount in BTC, like {example}.", example));
+}
+
+function parseBtc(text) {
+  const n = normalize(text);
+  const m = /^(\d*)(?:\.(\d*))?$/.exec(n);
+  if (!m || (m[1] === "" && !m[2])) throw new RangeError(tr("Enter an amount in BTC, like {example}.", { example: `0${marks().decimal}001` }));
+  if ((m[2] || "").length > 8) throw new RangeError(tr("Bitcoin has 8 decimal places at most."));
   const sats = Number(BigInt(m[1] || "0") * 100000000n + BigInt((m[2] || "").padEnd(8, "0") || "0"));
-  if (!Number.isSafeInteger(sats) || sats > MAX_SATS) throw new RangeError("That's more bitcoin than there is.");
+  if (!Number.isSafeInteger(sats) || sats > MAX_SATS) throw new RangeError(tr("That's more bitcoin than there is."));
   return sats;
 }
 
-function formatBtc(sats) {
-  const negative = sats < 0;
-  const n = Math.abs(sats);
-  const whole = Math.floor(n / SATS);
-  return `${negative ? "-" : ""}${whole}.${String(n % SATS).padStart(8, "0")}`;
+// A fee rate and the like: small, so no thousands; either mark for decimals.
+function parseDecimal(text) {
+  const s = String(text).trim();
+  if (!/^\d*(?:[.,]\d*)?$/.test(s) || !/\d/.test(s)) return NaN;
+  return Number(s.replace(",", "."));
 }
 
-__exports["parseBtc"] = parseBtc; __exports["formatBtc"] = formatBtc; __exports["SATS"] = SATS;
+function formatBtc(sats) {
+  const { decimal: D, group: G } = marks();
+  const negative = sats < 0;
+  const n = Math.abs(sats);
+  const whole = String(Math.floor(n / SATS)).replace(/\B(?=(\d{3})+$)/g, G);
+  return `${negative ? "-" : ""}${whole}${D}${String(n % SATS).padStart(8, "0")}`;
+}
+
+__exports["parseBtc"] = parseBtc; __exports["parseDecimal"] = parseDecimal; __exports["formatBtc"] = formatBtc; __exports["SATS"] = SATS;
 }
 
 // ======== src/ui.js ========
@@ -19288,7 +19693,8 @@ const { MIN_RATE, MAX_RATE, cleanEstimates, feeWarnings } = __mod("src/coinselec
 const { BuildError, buildSpend, psbtBytes } = __mod("src/build.js");
 const { KeyReader, SignedReader, readFile } = __mod("src/signed.js");
 const { MAX_ALPHANUMERIC, Scanner, drawQr, makeQr } = __mod("src/qr.js");
-const { parseBtc, formatBtc } = __mod("src/amount.js");
+const { parseBtc, parseDecimal, formatBtc } = __mod("src/amount.js");
+const { LANGUAGES, formatDate, formatDecimal, language, plural, setLanguage, tr } = __mod("src/i18n.js");
 const { save } = __mod("src/store.js");
 const { toBase64 } = __mod("vendor/zerogap/psbt/bytes.js");
 const { electrumQrText } = __mod("vendor/zerogap/psbt/transport.js");
@@ -19298,14 +19704,16 @@ const { scriptToAddress } = __mod("vendor/zerogap/psbt/script.js");
 
 const btc = (sats) => `${formatBtc(sats)} BTC`;
 const shortId = (id) => `${id.slice(0, 10)}…${id.slice(-6)}`;
-const FEE_TARGETS = [[1, "next block"], [3, "3 blocks"], [6, "about an hour"], [144, "about a day"]];
+const FEE_TARGETS = [[1, "next block"], [3, "3 blocks"], [6, "about an hour"], [144, "about a day"]]; // keys for tr()
+const HISTORY_KINDS = { in: "Received", out: "Sent", self: "Moved within this account" }; // keys for tr()
+const ENCODINGS = { Z: "compressed", 2: "base32", H: "hex" }; // keys for tr()
 const LARGE_QR_VERSION = 25;
 const RECEIVE_LIST = 5;
 const SERIES_SIZES = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 64, 128]; // codes in a series
-const SERIES_SPEEDS = [[250, "fast"], [500, "normal"], [1000, "slow"], [2000, "very slow"]]; // ms per code
+const SERIES_SPEEDS = [[250, "fast"], [500, "normal"], [1000, "slow"], [2000, "very slow"]]; // ms per code; keys for tr()
 const SERIES_VERSION = 12; // the densest code a series starts with; camera-tuned on the rig (BITCOIN.md, B2)
 
-const PRIVACY = [
+const PRIVACY = [ // keys for tr()
   ["The Esplora server", "Every address of this account, asked in a burst from one IP address and so linked together: the wallet's balance and whole history, and when you open it. Each transaction you send, before anyone else sees it, and the IP that sent it."],
   ["Network observers", "With HTTPS, that this page talks to that server, not what it asks."],
   ["The site serving this page", "That the page was loaded. Nothing else: no request goes to it. Better still, run the file from disk or your own server."],
@@ -19314,8 +19722,8 @@ const PRIVACY = [
 
 function privacyTable() {
   return h("table", {},
-    h("thead", {}, h("tr", {}, h("th", {}, "Who"), h("th", {}, "What they learn"))),
-    h("tbody", {}, ...PRIVACY.map(([who, what]) => h("tr", {}, h("td", { class: "who" }, who), h("td", {}, what)))));
+    h("thead", {}, h("tr", {}, h("th", {}, tr("Who")), h("th", {}, tr("What they learn")))),
+    h("tbody", {}, ...PRIVACY.map(([who, what]) => h("tr", {}, h("td", { class: "who" }, tr(who)), h("td", {}, tr(what))))));
 }
 
 const notice = (kind, ...text) => h("div", { class: `notice ${kind}`, role: kind === "bad" ? "alert" : null }, ...text);
@@ -19365,7 +19773,7 @@ class App {
 
   header() {
     const a = this.record;
-    const pick = !a ? null : h("select", { id: "account", "aria-label": "Account", onchange: (e) => {
+    const pick = !a ? null : h("select", { id: "account", "aria-label": tr("Account"), onchange: (e) => {
       if (e.target.value === "") {
         this.adding = true;
         this.render();
@@ -19374,21 +19782,29 @@ class App {
       this.state.current = e.target.value;
       this.reload();
     } }, ...this.state.accounts.map((x) => h("option", { value: x.id, selected: x.id === a.id }, x.label)),
-    h("option", { value: "" }, "Add an account…"));
+    h("option", { value: "" }, tr("Add an account…")));
+    const lang = h("select", { id: "language", "aria-label": tr("Language"), onchange: (e) => {
+      setLanguage(e.target.value);
+      this.state.language = language();
+      this.persist();
+      document.documentElement.lang = language();
+      this.render();
+    } }, ...LANGUAGES.map(([id, name]) => h("option", { value: id, selected: id === language() }, name)));
     return h("header", {},
       h("h1", {}, "GapWallet"),
       a ? h("span", { class: `badge${a.network === "mainnet" ? "" : " test"}`, id: "network" }, NETWORK_INFO[a.network].name) : null,
-      a && !this.account.fingerprint ? h("span", { class: "badge", id: "watchonly" }, "watch-only") : null,
+      a && !this.account.fingerprint ? h("span", { class: "badge", id: "watchonly" }, tr("watch-only")) : null,
       h("span", { class: "grow" }), pick,
-      a && this.client && !this.adding ? h("button", { id: "refresh", class: "small", disabled: Boolean(this.scanning), onclick: () => this.refresh() }, this.scanning ? "Scanning…" : "Refresh") : null);
+      a && this.client && !this.adding ? h("button", { id: "refresh", class: this.scanning ? "small pulse" : "small", disabled: Boolean(this.scanning), onclick: () => this.refresh() }, this.scanning ? tr("Scanning…") : tr("Refresh")) : null,
+      lang);
   }
 
   nav() {
-    const tabs = [["overview", "Overview"], ["receive", "Receive"], ["send", "Send"], ["settings", "Settings"]];
-    return h("nav", { role: "tablist" }, ...tabs.map(([id, name]) => h("button", { id: `tab-${id}`, role: "tab", "aria-selected": String(this.tab === id), onclick: () => {
+    const tabs = { overview: "Overview", receive: "Receive", send: "Send", settings: "Settings" }; // keys for tr()
+    return h("nav", { role: "tablist" }, ...Object.entries(tabs).map(([id, name]) => h("button", { id: `tab-${id}`, role: "tab", "aria-selected": String(this.tab === id), onclick: () => {
       this.tab = id;
       this.render();
-    } }, name)));
+    } }, tr(name))));
   }
 
   // ---- Import ----
@@ -19398,8 +19814,8 @@ class App {
     const preview = h("div", { id: "preview" });
     const key = h("textarea", { id: "key", spellcheck: "false", autocapitalize: "off", placeholder: "wpkh([73c5da0a/84h/0h/0h]xpub…/<0;1>/*)#…   or   zpub…, ypub…" });
     const fp = h("input", { id: "fingerprint", type: "text", spellcheck: "false", placeholder: "73c5da0a", maxlength: "8" });
-    const label = h("input", { id: "label", type: "text", value: `Account ${this.state.accounts.length + 1}` });
-    const add = h("button", { id: "add", class: "primary", disabled: true }, "Add this account");
+    const label = h("input", { id: "label", type: "text", value: tr("Account {n}", { n: this.state.accounts.length + 1 }) });
+    const add = h("button", { id: "add", class: "primary", disabled: true }, tr("Add this account"));
     const video = h("video", { muted: true, playsinline: true, id: "import-camera", hidden: true });
     const reading = h("div", { id: "import-reading" });
     let parsed = null;
@@ -19415,19 +19831,19 @@ class App {
         parsed = parseAccount(key.value, form.network, fp.value);
       } catch (e) {
         if (!(e instanceof ImportError)) throw e;
-        key.value = /private key or a seed/.test(e.message) ? "" : key.value; // don't leave it lying on the screen
+        key.value = e.secret ? "" : key.value; // don't leave it lying on the screen
         mount(preview, notice("bad", e.message));
         return;
       }
       add.disabled = false;
       mount(preview,
         h("dl", {},
-          h("dt", {}, "Account"), h("dd", { class: "mono", id: "preview-path" }, `${accountPath(parsed)} (${SCRIPT_INFO[parsed.script].name})`),
-          h("dt", {}, "Master fingerprint"), h("dd", { class: "mono" }, parsed.fingerprint || "none yet")),
+          h("dt", {}, tr("Account")), h("dd", { class: "mono", id: "preview-path" }, `${accountPath(parsed)} (${SCRIPT_INFO[parsed.script].name})`),
+          h("dt", {}, tr("Master fingerprint")), h("dd", { class: "mono" }, parsed.fingerprint || tr("none yet"))),
         ...parsed.warnings.map((w) => notice("warn", w)),
-        parsed.fingerprint ? null : notice("warn", "Without the master fingerprint this account is watch-only: you'll see its balance and history, but can't build transactions until you add it. The signer shows it with the public key."),
-        h("h3", {}, "Its first addresses"),
-        h("p", { class: "small dim" }, "Compare these with the device that made the key, before you trust them."),
+        parsed.fingerprint ? null : notice("warn", tr("Without the master fingerprint this account is watch-only: you'll see its balance and history, but can't build transactions until you add it. The signer shows it with the public key.")),
+        h("h3", {}, tr("Its first addresses")),
+        h("p", { class: "small dim" }, tr("Compare these with the device that made the key, before you trust them.")),
         ...[0, 1, 2].map((i) => h("div", { class: "mono" }, `${i}  ${addressAt(parsed, 0, i).address}`)));
     };
     key.addEventListener("input", check);
@@ -19443,7 +19859,7 @@ class App {
         try {
           const got = reader.add(text);
           if (got.text === undefined) {
-            mount(reading, h("p", { class: "small" }, `Read ${got.have} of ${got.total} codes…`));
+            mount(reading, h("p", { class: "small" }, tr("Read {have} of {total} codes…", got)));
             return;
           }
           parseAccount(got.text, form.network, fp.value);
@@ -19459,7 +19875,7 @@ class App {
         }
       } });
       this.camera.start();
-    } }, "Read it with the camera");
+    } }, tr("Read it with the camera"));
     add.addEventListener("click", () => {
       const id = `a${Date.now().toString(36)}`;
       this.state.accounts.push({ id, label: label.value.trim() || id, network: form.network, key: key.value.trim(), fingerprint: fp.value.trim().toLowerCase(), gapLimit: DEFAULT_GAP });
@@ -19468,24 +19884,24 @@ class App {
     });
 
     return h("div", { class: "panel" },
-      h("h2", {}, "Add an account"),
-      h("p", {}, "GapWallet only ever holds public keys. Nothing here is sent anywhere: the page contacts no server until you choose one."),
-      h("label", {}, "Network"),
+      h("h2", {}, tr("Add an account")),
+      h("p", {}, tr("GapWallet only ever holds public keys. Nothing here is sent anywhere: the page contacts no server until you choose one.")),
+      h("label", {}, tr("Network")),
       ...Object.entries(NETWORK_INFO).map(([id, info]) => h("label", { class: "radio" },
         h("input", { type: "radio", name: "network", value: id, onchange: () => {
           form.network = id;
           check();
         } }), info.name)),
-      h("label", { for: "key" }, "Descriptor, zpub or ypub"), key,
+      h("label", { for: "key" }, tr("Descriptor, zpub or ypub")), key,
       h("div", { class: "row" }, startCamera), video, reading,
-      h("label", { for: "fingerprint" }, "Master fingerprint (a descriptor already has it)"), fp,
-      h("label", { for: "label" }, "Name"), label,
+      h("label", { for: "fingerprint" }, tr("Master fingerprint (a descriptor already has it)")), fp,
+      h("label", { for: "label" }, tr("Name")), label,
       preview,
       h("div", { class: "row" }, add,
         this.record ? h("button", { onclick: () => {
           this.adding = false;
           this.render();
-        } }, "Cancel") : null));
+        } }, tr("Cancel")) : null));
   }
 
   // ---- Server ----
@@ -19505,27 +19921,27 @@ class App {
       this.reload();
     };
     return h("div", {},
-      h("p", {}, `An Esplora server answers for this ${NETWORK_INFO[network].name} account. There is no default: it's your choice, because of what the server learns.`),
+      h("p", {}, tr("An Esplora server answers for this {network} account. There is no default: it's your choice, because of what the server learns.", { network: NETWORK_INFO[network].name })),
       privacyTable(),
-      h("div", { class: "row" }, h("button", { id: "preset", class: "primary", onclick: () => use(PRESETS[network]) }, `Use ${new URL(PRESETS[network]).host}`)),
-      h("label", { for: "server" }, "Or your own server"), url, message,
-      h("div", { class: "row" }, h("button", { id: "use-server", onclick: () => use(url.value) }, "Use this server")));
+      h("div", { class: "row" }, h("button", { id: "preset", class: "primary", onclick: () => use(PRESETS[network]) }, tr("Use {host}", { host: new URL(PRESETS[network]).host }))),
+      h("label", { for: "server" }, tr("Or your own server")), url, message,
+      h("div", { class: "row" }, h("button", { id: "use-server", onclick: () => use(url.value) }, tr("Use this server"))));
   }
 
   serverView() {
-    return h("div", { class: "panel" }, h("h2", {}, "Choose a server"), this.serverChooser());
+    return h("div", { class: "panel" }, h("h2", {}, tr("Choose a server")), this.serverChooser());
   }
 
   // ---- Scan ----
 
   async refresh() {
     if (this.scanning) return;
-    this.scanning = { text: "Checking the server…" };
+    this.scanning = { text: tr("Checking the server…") };
     this.scanError = null;
     this.rerender();
     this.client.onHold = (seconds) => {
       if (!this.scanning) return;
-      this.scanning.text = `The server is slowing us down: waiting ${seconds} s…`;
+      this.scanning.text = tr("The server is slowing us down: waiting {seconds} s…", { seconds });
       this.showProgress();
     };
     try {
@@ -19559,7 +19975,7 @@ class App {
   }
 
   status() {
-    if (this.scanning) return h("p", { id: "progress", class: "dim" }, this.scanning.text);
+    if (this.scanning) return h("p", { id: "progress", class: "dim pulse" }, this.scanning.text);
     if (this.scanError) return notice("bad", this.scanError);
     return null;
   }
@@ -19568,13 +19984,13 @@ class App {
     const fp = h("input", { id: "add-fingerprint", type: "text", spellcheck: "false", maxlength: "8", placeholder: "73c5da0a" });
     const message = h("div", {});
     return notice("warn",
-      h("strong", {}, "Watch-only: no master fingerprint."),
-      h("p", {}, "You can see this account, but a signer couldn't find its keys in a transaction built here. The device that made the key shows the fingerprint with it."),
-      h("label", { for: "add-fingerprint" }, "Master fingerprint"), fp, message,
+      h("strong", {}, tr("Watch-only: no master fingerprint.")),
+      h("p", {}, tr("You can see this account, but a signer couldn't find its keys in a transaction built here. The device that made the key shows the fingerprint with it.")),
+      h("label", { for: "add-fingerprint" }, tr("Master fingerprint")), fp, message,
       h("div", { class: "row" }, h("button", { id: "save-fingerprint", onclick: () => {
         try {
           parseAccount(this.record.key, this.record.network, fp.value);
-          if (!/^[0-9a-fA-F]{8}$/.test(fp.value.trim())) throw new ImportError("A master fingerprint is 8 hexadecimal digits, like 73c5da0a.");
+          if (!/^[0-9a-fA-F]{8}$/.test(fp.value.trim())) throw new ImportError(tr("A master fingerprint is 8 hexadecimal digits, like 73c5da0a."));
         } catch (e) {
           if (!(e instanceof ImportError)) throw e;
           mount(message, notice("bad", e.message));
@@ -19582,7 +19998,7 @@ class App {
         }
         this.record.fingerprint = fp.value.trim().toLowerCase();
         this.reload();
-      } }, "Save fingerprint")));
+      } }, tr("Save fingerprint"))));
   }
 
   // ---- Overview ----
@@ -19592,29 +20008,29 @@ class App {
     const body = [this.status(), this.account.fingerprint ? null : this.fingerprintPrompt()];
     if (!s) return h("div", {}, ...body);
     body.push(h("div", { class: "panel" },
-      h("div", { class: "dim small" }, "Balance"),
+      h("div", { class: "dim small" }, tr("Balance")),
       h("div", { class: "balance", id: "balance" }, btc(s.balance.confirmed)),
-      s.balance.unconfirmed ? h("div", { id: "unconfirmed" }, `and ${btc(s.balance.unconfirmed)} unconfirmed`) : null));
-    body.push(h("div", { class: "panel" }, h("h2", {}, "History"),
-      s.history.length === 0 ? h("p", { class: "dim" }, "Nothing yet.") : h("table", { id: "history" },
-        h("thead", {}, h("tr", {}, h("th", {}, "When"), h("th", {}, "What"), h("th", { class: "num" }, "Amount (BTC)"))),
+      s.balance.unconfirmed ? h("div", { id: "unconfirmed" }, tr("and {amount} unconfirmed", { amount: btc(s.balance.unconfirmed) })) : null));
+    body.push(h("div", { class: "panel" }, h("h2", {}, tr("History")),
+      s.history.length === 0 ? h("p", { class: "dim" }, tr("Nothing yet.")) : h("table", { id: "history" },
+        h("thead", {}, h("tr", {}, h("th", {}, tr("When")), h("th", {}, tr("What")), h("th", { class: "num" }, tr("Amount (BTC)")))),
         h("tbody", {}, ...s.history.map((t) => this.historyRow(t))))));
     return h("div", {}, ...body);
   }
 
   historyRow(t) {
-    const when = t.height === null ? "unconfirmed" : t.time ? new Date(t.time * 1000).toISOString().slice(0, 10) : `block ${t.height}`;
-    const what = { in: "Received", out: "Sent", self: "Moved within this account" }[t.kind];
+    const when = t.height === null ? tr("unconfirmed") : t.time ? formatDate(t.time) : tr("block {height}", { height: t.height });
+    const what = tr(HISTORY_KINDS[t.kind]);
     return h("tr", { class: t.kind },
-      h("td", { class: "nowrap" }, when, h("div", { class: "small dim" }, t.height === null ? "" : `${t.confirmations} conf.`)),
+      h("td", { class: "nowrap" }, when, h("div", { class: "small dim" }, t.height === null ? "" : tr("{n} conf.", { n: t.confirmations }))),
       h("td", {}, what, h("div", { class: "small dim mono" }, shortId(t.txid))),
-      h("td", { class: "num" }, t.kind === "self" ? h("span", { class: "dim" }, `fee ${formatBtc(t.fee)}`) : h("span", { class: t.net >= 0 ? "good" : "" }, `${t.net >= 0 ? "+" : ""}${formatBtc(t.net)}`)));
+      h("td", { class: "num" }, t.kind === "self" ? h("span", { class: "dim" }, tr("fee {amount}", { amount: formatBtc(t.fee) })) : h("span", { class: t.net >= 0 ? "good" : "" }, `${t.net >= 0 ? "+" : ""}${formatBtc(t.net)}`)));
   }
 
   // ---- Receive ----
 
   receiveView() {
-    if (!this.scan) return h("div", {}, this.status(), h("p", { class: "dim" }, "Addresses show once the scan has checked which are used."));
+    if (!this.scan) return h("div", {}, this.status(), h("p", { class: "dim" }, tr("Addresses show once the scan has checked which are used.")));
     this.receiveIndex ??= this.scan.next[0];
     if (this.receiveIndex < this.scan.next[0]) this.receiveIndex = this.scan.next[0];
     const first = this.scan.next[0];
@@ -19622,12 +20038,12 @@ class App {
     const canvas = h("canvas", { class: "code", id: "receive-qr" });
     drawQr(canvas, makeQr(a.address, "Byte"), 6);
     return h("div", { class: "panel" }, this.status(),
-      h("h2", {}, "Receive"),
+      h("h2", {}, tr("Receive")),
       h("div", { class: "qr" }, canvas),
       h("p", { class: "mono", id: "receive-address" }, a.address),
       h("p", { class: "small dim mono" }, a.path),
-      h("div", { class: "row" }, h("button", { class: "small", onclick: () => copyText(a.address) }, "Copy")),
-      h("h3", {}, "Next addresses"),
+      h("div", { class: "row" }, h("button", { class: "small", onclick: () => copyText(a.address) }, tr("Copy"))),
+      h("h3", {}, tr("Next addresses")),
       ...Array.from({ length: RECEIVE_LIST }, (_, i) => {
         const e = addressAt(this.account, 0, first + i);
         return h("div", { class: "row" }, h("button", { class: "small", "aria-pressed": String(e.index === this.receiveIndex), onclick: () => {
@@ -19635,16 +20051,16 @@ class App {
           this.render();
         } }, `#${e.index}`), h("span", { class: "mono" }, e.address));
       }),
-      h("p", { class: "small dim" }, `The wallet doesn't record which addresses you've given out. If you hand out more than the gap limit (${this.record.gapLimit}) with none paid, a later payment can fall past the scan: raise the gap limit in Settings to see it.`));
+      h("p", { class: "small dim" }, tr("The wallet doesn't record which addresses you've given out. If you hand out more than the gap limit ({gap}) with none paid, a later payment can fall past the scan: raise the gap limit in Settings to see it.", { gap: this.record.gapLimit })));
   }
 
   // ---- Send ----
 
   sendView() {
     if (!this.account.fingerprint) return h("div", {}, this.status(), this.fingerprintPrompt());
-    if (!this.scan) return h("div", {}, this.status(), h("p", { class: "dim" }, "Sending needs a finished scan."));
+    if (!this.scan) return h("div", {}, this.status(), h("p", { class: "dim" }, tr("Sending needs a finished scan.")));
     this.send ??= { stage: "form", form: { address: "", amount: "", sendAll: false, rate: "", hand: false, ticked: new Set() } };
-    const steps = [["form", "1 Details"], ["review", "2 Review"], ["show", "3 Sign"], ["scan", "4 Read back"], ["done", "5 Sent"]];
+    const steps = [["form", tr("1 Details")], ["review", tr("2 Review")], ["show", tr("3 Sign externally")], ["scan", tr("4 Read back")], ["done", tr("5 Sent")]];
     const body = { form: () => this.sendForm(), review: () => this.sendReview(), show: () => this.sendShow(), scan: () => this.sendScan(), done: () => this.sendDone() }[this.send.stage]();
     return h("div", { class: "panel" },
       h("ol", { class: "steps" }, ...steps.map(([id, name]) => h("li", { "aria-current": id === this.send.stage ? "step" : null }, name))),
@@ -19660,7 +20076,22 @@ class App {
     const f = this.send.form;
     const message = h("div", { id: "send-error" });
     const address = h("input", { id: "address", type: "text", spellcheck: "false", value: f.address, oninput: (e) => (f.address = e.target.value) });
-    const amount = h("input", { id: "amount", type: "text", inputmode: "decimal", placeholder: "0.001", value: f.amount, disabled: f.sendAll, oninput: (e) => (f.amount = e.target.value) });
+    // What the amount typed is read as, while it's typed: a mark misread can't pass unseen
+    const reads = h("div", { id: "amount-read", class: "small dim mono" });
+    const readBack = () => {
+      if (f.sendAll || f.amount.trim() === "") return mount(reads);
+      try {
+        mount(reads, `= ${btc(parseBtc(f.amount))}`);
+      } catch (e) {
+        if (!(e instanceof RangeError)) throw e;
+        mount(reads, e.message);
+      }
+    };
+    const amount = h("input", { id: "amount", type: "text", inputmode: "decimal", placeholder: formatBtc(100000).replace(/0+$/, ""), value: f.amount, disabled: f.sendAll, oninput: (e) => {
+      f.amount = e.target.value;
+      readBack();
+    } });
+    readBack();
     const rate = h("input", { id: "rate", type: "text", inputmode: "decimal", value: f.rate, oninput: (e) => {
       f.rate = e.target.value;
       paint();
@@ -19668,12 +20099,12 @@ class App {
     const choices = h("div", { class: "choices", id: "fee-choices" });
     const paint = () => {
       const est = this.send.estimates;
-      mount(choices, ...(!est ? [h("span", { class: "dim small" }, "Fetching estimates…")] : FEE_TARGETS.filter(([n]) => est[n] !== undefined).map(([n, name]) => h("button", {
-        "aria-pressed": String(Number(f.rate) === est[n]), onclick: () => {
-          f.rate = String(est[n]);
+      mount(choices, ...(!est ? [h("span", { class: "dim small" }, tr("Fetching estimates…"))] : FEE_TARGETS.filter(([n]) => est[n] !== undefined).map(([n, name]) => h("button", {
+        "aria-pressed": String(parseDecimal(f.rate) === est[n]), onclick: () => {
+          f.rate = formatDecimal(est[n], 2);
           rate.value = f.rate;
           paint();
-        } }, `${name}: ${est[n]} sat/vB`))));
+        } }, tr("{target}: {rate} sat/vB", { target: tr(name), rate: est[n] })))));
     };
     paint();
     if (this.send.estimates === undefined) {
@@ -19681,23 +20112,23 @@ class App {
       this.client.feeEstimates().then((answer) => {
         const est = cleanEstimates(answer);
         this.send.estimates = est;
-        if (!f.rate && est[6] !== undefined) f.rate = String(est[6]);
+        if (!f.rate && est[6] !== undefined) f.rate = formatDecimal(est[6], 2);
         rate.value = f.rate;
         paint();
       }).catch(() => {
-        mount(choices, h("span", { class: "small" }, "The server gave no fee estimates: type a rate."));
+        mount(choices, h("span", { class: "small" }, tr("The server gave no fee estimates: type a rate.")));
       });
     }
 
-    const coinList = h("div", { id: "coins" }, ...(this.scan.coins.length === 0 ? [h("p", { class: "dim small" }, "No coins yet.")] : [h("table", {},
+    const coinList = h("div", { id: "coins" }, ...(this.scan.coins.length === 0 ? [h("p", { class: "dim small" }, tr("No coins yet."))] : [h("table", {},
       h("tbody", {}, ...this.scan.coins.map((c) => {
         const id = `${c.txid}:${c.vout}`;
         return h("tr", {},
-          h("td", {}, h("input", { type: "checkbox", "aria-label": "Spend this coin", checked: f.ticked.has(id), onchange: (e) => {
+          h("td", {}, h("input", { type: "checkbox", "aria-label": tr("Spend this coin"), checked: f.ticked.has(id), onchange: (e) => {
             if (e.target.checked) f.ticked.add(id);
             else f.ticked.delete(id);
           } })),
-          h("td", { class: "mono" }, c.entry.path.split("/").slice(-2).join("/"), c.confirmed ? "" : " (unconfirmed)"),
+          h("td", { class: "mono" }, c.entry.path.split("/").slice(-2).join("/"), c.confirmed ? "" : ` (${tr("unconfirmed")})`),
           h("td", { class: "num" }, formatBtc(c.value)));
       })))]));
 
@@ -19712,19 +20143,20 @@ class App {
         review.disabled = false;
         mount(message, notice("bad", e.message));
       }
-    } }, "Review");
+    } }, tr("Review"));
 
     return h("div", {}, this.status(),
-      h("label", { for: "address" }, "Pay to"), address,
-      h("label", { for: "amount" }, "Amount (BTC)"), amount,
+      h("label", { for: "address" }, tr("Pay to")), address,
+      h("label", { for: "amount" }, tr("Amount (BTC)")), amount, reads,
       h("label", { class: "check" }, h("input", { id: "send-all", type: "checkbox", checked: f.sendAll, onchange: (e) => {
         f.sendAll = e.target.checked;
         amount.disabled = f.sendAll;
-      } }), "Send everything (no change)"),
-      h("label", { for: "rate" }, `Fee rate (sat/vB, ${MIN_RATE} to ${MAX_RATE})`), choices, h("div", { class: "row" }, rate),
+        readBack();
+      } }), tr("Send everything (no change)")),
+      h("label", { for: "rate" }, tr("Fee rate (sat/vB, {min} to {max})", { min: MIN_RATE, max: MAX_RATE })), choices, h("div", { class: "row" }, rate),
       h("details", { open: f.hand ? true : null, ontoggle: (e) => (f.hand = e.target.open) },
-        h("summary", {}, "Choose coins by hand"),
-        h("p", { class: "small dim" }, "Exactly the ticked coins are spent, confirmed or not. With none ticked, the wallet chooses among confirmed coins."),
+        h("summary", {}, tr("Choose coins by hand")),
+        h("p", { class: "small dim" }, tr("Exactly the ticked coins are spent, confirmed or not. With none ticked, the wallet chooses among confirmed coins.")),
         coinList),
       message,
       h("div", { class: "row" }, review));
@@ -19734,8 +20166,8 @@ class App {
     const f = this.send.form;
     const sendAll = f.sendAll;
     const amount = sendAll ? 0 : parseBtc(f.amount);
-    const rate = Number(f.rate);
-    if (f.rate.trim() === "" || !Number.isFinite(rate)) throw new RangeError("Enter a fee rate.");
+    const rate = parseDecimal(f.rate);
+    if (!Number.isFinite(rate)) throw new RangeError(tr("Enter a fee rate."));
     const coins = f.hand && f.ticked.size ? this.scan.coins.filter((c) => f.ticked.has(`${c.txid}:${c.vout}`)) : null;
     const spend = await buildSpend(this.account, this.scan, { address: f.address, amount, sendAll, rate, coins }, this.client);
     const send = this.send;
@@ -19746,22 +20178,22 @@ class App {
 
   sendReview() {
     const { spend, warnings } = this.send;
-    const go = h("button", { id: "to-sign", class: "primary", disabled: warnings.length > 0, onclick: () => this.go("show") }, "Show it to the signer");
+    const go = h("button", { id: "to-sign", class: "primary", disabled: warnings.length > 0, onclick: () => this.go("show") }, tr("Prepare for Signing"));
     return h("div", {},
-      h("h2", {}, "Review"),
+      h("h2", {}, tr("Review")),
       h("dl", {},
-        h("dt", {}, "Pay"), h("dd", { class: "mono", id: "review-amount" }, btc(spend.amount)),
-        h("dt", {}, "To"), h("dd", { class: "mono" }, spend.outputs.find((o) => !o.change).address),
-        h("dt", {}, "Fee"), h("dd", { class: "mono", id: "review-fee" }, `${btc(spend.fee)} (${spend.vsize} vB at ${spend.rate} sat/vB)`),
+        h("dt", {}, tr("Pay")), h("dd", { class: "mono", id: "review-amount" }, btc(spend.amount)),
+        h("dt", {}, tr("To")), h("dd", { class: "mono" }, spend.outputs.find((o) => !o.change).address),
+        h("dt", {}, tr("Fee")), h("dd", { class: "mono", id: "review-fee" }, tr("{amount} ({vsize} vB at {rate} sat/vB)", { amount: btc(spend.fee), vsize: spend.vsize, rate: spend.rate })),
         ...spend.outputs.filter((o) => o.change).flatMap((o) => [
-          h("dt", {}, "Change"), h("dd", { class: "mono" }, `${btc(o.value)} to ${o.address}`, h("div", { class: "small dim" }, o.change.path))]),
-        h("dt", {}, "Spends"), h("dd", {}, ...spend.inputs.map((c) => h("div", { class: "mono" }, `${formatBtc(c.value)}  ${c.entry.path}`)))),
-      spend.dropped ? notice("warn", `${spend.dropped} sat that would have been change is too small to keep, and goes to the fee.`) : null,
-      spend.skipped ? notice("warn", `${spend.skipped} coin(s) were left out: they're worth less than they cost to spend at this rate.`) : null,
+          h("dt", {}, tr("Change")), h("dd", { class: "mono" }, tr("{amount} to {address}", { amount: btc(o.value), address: o.address }), h("div", { class: "small dim" }, o.change.path))]),
+        h("dt", {}, tr("Spends")), h("dd", {}, ...spend.inputs.map((c) => h("div", { class: "mono" }, `${formatBtc(c.value)}  ${c.entry.path}`)))),
+      spend.dropped ? notice("warn", tr("{n} sat that would have been change is too small to keep, and goes to the fee.", { n: spend.dropped })) : null,
+      spend.skipped ? notice("warn", plural(spend.skipped, "{n} coin was left out: it's worth less than it costs to spend at this rate.", "{n} coins were left out: they're worth less than they cost to spend at this rate.")) : null,
       ...warnings.map((w) => notice("warn", w)),
-      warnings.length ? h("label", { class: "check" }, h("input", { id: "ack-fee", type: "checkbox", onchange: (e) => (go.disabled = !e.target.checked) }), "I've seen this, and it's what I want.") : null,
-      h("p", { class: "small dim" }, "The signer shows all of this again, from the transaction itself. Trust what it shows."),
-      h("div", { class: "row" }, h("button", { onclick: () => this.go("form") }, "Back"), go));
+      warnings.length ? h("label", { class: "check" }, h("input", { id: "ack-fee", type: "checkbox", onchange: (e) => (go.disabled = !e.target.checked) }), tr("I've seen this, and it's what I want.")) : null,
+      h("p", { class: "small dim" }, tr("The signer shows all of this again, from the transaction itself. Trust what it shows.")),
+      h("div", { class: "row" }, h("button", { onclick: () => this.go("form") }, tr("Back")), go));
   }
 
   sendShow() {
@@ -19776,27 +20208,28 @@ class App {
         send.format = id;
         this.render();
       } }), name);
-    const parts = [h("h2", {}, "Sign it"),
-      h("p", { class: "small dim", id: "psbt-size" }, `PSBT: ${bytes.length} bytes`),
-      choose("base43", "One code (Base43: Electrum, and zerogap's signer)", !single),
-      choose("bbqr", "BBQr: a series of codes (zerogap's signer, Coldcard, Sparrow)", false)];
-    if (!single) parts.push(notice("warn", `This PSBT doesn't fit in one QR code: ${text.length} characters, ${MAX_ALPHANUMERIC} at most. It goes out as a series. Electrum doesn't read those: for Electrum, save the PSBT as a file.`));
+    const parts = [h("h2", {}, tr("Sign it Externally")),
+      h("p", { id: "sign-externally" }, tr("This wallet is designed to be used with external signing apps — below you can export the prepared transaction in various formats to the signing app of your choice.")),
+      h("p", { class: "small dim", id: "psbt-size" }, tr("PSBT: {n} bytes", { n: bytes.length })),
+      choose("base43", tr("One code (Base43: Electrum, and ZeroGap's signer)"), !single),
+      choose("bbqr", tr("BBQr: a series of codes (ZeroGap's signer, Coldcard, Sparrow)"), false)];
+    if (!single) parts.push(notice("warn", tr("This PSBT doesn't fit in one QR code: {n} characters, {max} at most. It goes out as a series. Electrum doesn't read those: for Electrum, save the PSBT as a file.", { n: text.length, max: MAX_ALPHANUMERIC })));
     if (format === "base43") {
       const canvas = h("canvas", { class: "code", id: "psbt-qr" });
       drawQr(canvas, single, Math.max(2, Math.floor(620 / (single.size + 8))));
       parts.push(h("div", { class: "qr" }, canvas),
-        h("p", { class: "small dim", id: "qr-info" }, `${text.length} characters, QR version ${single.version}`));
-      if (single.version > LARGE_QR_VERSION) parts.push(notice("warn", "This code is dense. If the camera can't read it, enlarge the window or use a series."));
+        h("p", { class: "small dim", id: "qr-info" }, tr("{n} characters, QR version {version}", { n: text.length, version: single.version })));
+      if (single.version > LARGE_QR_VERSION) parts.push(notice("warn", tr("This code is dense. If the camera can't read it, enlarge the window or use a series.")));
     } else {
       parts.push(this.series(bytes));
     }
-    parts.push(h("details", {}, h("summary", {}, "The PSBT as text or a file"),
+    parts.push(h("details", {}, h("summary", {}, tr("The PSBT as text or a file")),
       h("textarea", { id: "psbt-text", readonly: true }, b64),
       h("div", { class: "row" },
-        h("button", { class: "small", onclick: () => copyText(b64) }, "Copy Base64"),
-        h("button", { id: "save-psbt", class: "small", onclick: () => download(bytes, `${send.spend.txid.slice(0, 8)}.psbt`) }, "Save .psbt"))),
-    h("div", { class: "row" }, h("button", { onclick: () => this.go("review") }, "Back"),
-      h("button", { id: "to-scan", class: "primary", onclick: () => this.go("scan") }, "It's signed: read it back")));
+        h("button", { class: "small", onclick: () => copyText(b64) }, tr("Copy Base64")),
+        h("button", { id: "save-psbt", class: "small", onclick: () => download(bytes, `${send.spend.txid.slice(0, 8)}.psbt`) }, tr("Save .psbt")))),
+    h("div", { class: "row" }, h("button", { onclick: () => this.go("review") }, tr("Back")),
+      h("button", { id: "to-scan", class: "primary", onclick: () => this.go("scan") }, tr("It's signed: read it back"))));
     return h("div", {}, ...parts);
   }
 
@@ -19814,7 +20247,7 @@ class App {
       }
     }
     const sizes = [...fits.keys()];
-    if (sizes.length === 0) return notice("bad", "This PSBT is too big even for a series of codes. Save it as a file instead.");
+    if (sizes.length === 0) return notice("bad", tr("This PSBT is too big even for a series of codes. Save it as a file instead."));
     if (!fits.has(send.seriesSize)) send.seriesSize = sizes.find((n) => fits.get(n).version <= SERIES_VERSION) ?? sizes.at(-1);
     send.seriesSpeed ??= 500;
     const made = fits.get(send.seriesSize);
@@ -19825,7 +20258,7 @@ class App {
     let at = 0;
     const show = () => {
       drawQr(canvas, codes[at], scale);
-      label.textContent = `Code ${at + 1} of ${codes.length}`;
+      label.textContent = tr("Code {at} of {n}", { at: at + 1, n: codes.length });
       canvas.dataset.part = String(at);
     };
     const play = () => {
@@ -19843,21 +20276,22 @@ class App {
     const pause = h("button", { id: "series-pause", class: "small", onclick: () => {
       if (this.seriesTimer) {
         this.stopSeries();
-        pause.textContent = "Play";
+        pause.textContent = tr("Play");
       } else {
         play();
-        pause.textContent = "Pause";
+        pause.textContent = tr("Pause");
       }
-    } }, "Pause");
+    } }, tr("Pause"));
     if (codes.length > 1) play();
     return h("div", {},
       h("div", { class: "qr" }, canvas),
       h("div", { class: "row" }, label, codes.length > 1 ? pause : null),
-      h("p", { class: "small dim", id: "qr-info" }, `BBQr, ${{ Z: "compressed", 2: "base32", H: "hex" }[made.encoding]}: ${codes.length} code${codes.length > 1 ? "s" : ""} of QR version ${made.version}`),
+      h("p", { class: "small dim", id: "qr-info" }, plural(codes.length, "BBQr, {encoding}: {n} code of QR version {version}", "BBQr, {encoding}: {n} codes of QR version {version}",
+        { encoding: tr(ENCODINGS[made.encoding]), version: made.version })),
       h("div", { class: "row" },
-        select("series-size", "Codes, up to", send.seriesSize, sizes.map((n) => [n, String(n)]), (n) => (send.seriesSize = n)),
-        codes.length > 1 ? select("series-speed", "Speed", send.seriesSpeed, SERIES_SPEEDS, (n) => (send.seriesSpeed = n)) : null),
-      h("p", { class: "small dim" }, "If the camera misses codes, use more of them (each is simpler) or slow down. A code it misses comes round again."));
+        select("series-size", tr("Codes, up to"), send.seriesSize, sizes.map((n) => [n, String(n)]), (n) => (send.seriesSize = n)),
+        codes.length > 1 ? select("series-speed", tr("Speed"), send.seriesSpeed, SERIES_SPEEDS.map(([v, name]) => [v, tr(name)]), (n) => (send.seriesSpeed = n)) : null),
+      h("p", { class: "small dim" }, tr("If the camera misses codes, use more of them (each is simpler) or slow down. A code it misses comes round again.")));
   }
 
   stopSeries() {
@@ -19868,7 +20302,7 @@ class App {
   sendScan() {
     const send = this.send;
     const result = h("div", { id: "scan-result" });
-    const pasted = h("textarea", { id: "signed", spellcheck: "false", placeholder: "Or paste the signed transaction: hex, Base64 or Base43" });
+    const pasted = h("textarea", { id: "signed", spellcheck: "false", placeholder: tr("Or paste the signed transaction: hex, Base64 or Base43") });
     const video = h("video", { muted: true, playsinline: true, id: "camera", hidden: true });
     const reader = new SignedReader(send.spend);
     // Camera, paste and file all end here, with the same checks.
@@ -19883,14 +20317,15 @@ class App {
         return;
       }
       if (got.kind === "progress") {
-        mount(result, h("label", { for: "series-progress" }, `Read ${got.have} of ${got.total} codes. Keep the series in view.`),
+        mount(result, h("label", { for: "series-progress" }, tr("Read {have} of {total} codes. Keep the series in view.", got)),
           h("progress", { id: "series-progress", max: String(got.total), value: String(got.have) }));
         return;
       }
       send.signed = got;
       if (got.kind === "partial") {
         const { signed, total, matches } = send.signed;
-        mount(result, notice("warn", `This is a PSBT with ${signed} of ${total} inputs signed${matches ? "" : ", and it isn't the transaction built here"}. It needs its other signatures: take it to the signer holding the other keys.`));
+        mount(result, notice("warn", matches ? tr("This is a PSBT with {signed} of {total} inputs signed. It needs its other signatures: take it to the signer holding the other keys.", { signed, total })
+          : tr("This is a PSBT with {signed} of {total} inputs signed, and it isn't the transaction built here. It needs its other signatures: take it to the signer holding the other keys.", { signed, total })));
         return;
       }
       this.stopCamera();
@@ -19909,31 +20344,31 @@ class App {
       video.hidden = false;
       this.camera = new Scanner(video, { onCode: accept, onError: (m) => mount(result, notice("bad", m)) });
       this.camera.start();
-    } }, "Start the camera");
+    } }, tr("Start the camera"));
     if (send.signed?.kind === "tx") this.showSigned(result);
     return h("div", {},
-      h("h2", {}, "Read the signed transaction"),
+      h("h2", {}, tr("Read the signed transaction")),
       video,
       h("div", { class: "row" }, start),
-      h("label", { for: "signed" }, "Or paste it"), pasted,
+      h("label", { for: "signed" }, tr("Or paste it")), pasted,
       h("div", { class: "row" }, h("button", { id: "read-pasted", onclick: () => {
         // a series pasted as lines: each line is one code
         for (const line of pasted.value.split(/\s+/).filter(Boolean)) accept({ text: line, bytes: null });
-      } }, "Read")),
-      h("label", { for: "signed-file" }, "Or open a file"), file,
+      } }, tr("Read"))),
+      h("label", { for: "signed-file" }, tr("Or open a file")), file,
       result,
-      h("div", { class: "row" }, h("button", { onclick: () => this.go("show") }, "Back")));
+      h("div", { class: "row" }, h("button", { onclick: () => this.go("show") }, tr("Back"))));
   }
 
   showSigned(into) {
     const send = this.send;
     const { tx, txid, matches, hex } = send.signed;
     const net = NETWORK_INFO[this.record.network].lib;
-    const go = h("button", { id: "broadcast", class: "primary", disabled: !matches }, "Broadcast");
+    const go = h("button", { id: "broadcast", class: "primary", disabled: !matches }, tr("Broadcast"));
     const message = h("div", { id: "broadcast-result" });
     go.addEventListener("click", async () => {
       go.disabled = true;
-      mount(message, h("p", { class: "dim" }, "Sending…"));
+      mount(message, h("p", { class: "dim" }, tr("Sending…")));
       try {
         const answered = await this.client.broadcast(hex);
         send.sent = { txid, agrees: answered.toLowerCase() === txid };
@@ -19942,31 +20377,31 @@ class App {
       } catch (e) {
         if (!(e instanceof EsploraError)) throw e;
         go.disabled = false;
-        mount(message, notice("bad", `The server refused it, or couldn't be reached: ${e.message}. It hasn't been retried; broadcasting again is safe.`));
+        mount(message, notice("bad", tr("The server refused it, or couldn't be reached: {reason}. It hasn't been retried; broadcasting again is safe.", { reason: e.message })));
       }
     });
     mount(into,
-      matches ? notice("good", "This is the transaction built here, signed.") : notice("bad",
-        h("strong", {}, "This isn't the transaction built here."),
-        h("p", {}, "It has other inputs or outputs than the ones you reviewed. Check them below."),
-        h("label", { class: "check" }, h("input", { id: "ack-different", type: "checkbox", onchange: (e) => (go.disabled = !e.target.checked) }), "I know what this transaction is, and want to broadcast it.")),
-      h("dl", {}, h("dt", {}, "Transaction"), h("dd", { class: "mono", id: "signed-txid" }, txid),
-        ...tx.outputs.flatMap((o, i) => [h("dt", {}, `Output ${i}`), h("dd", { class: "mono" }, `${btc(o.value)} to ${scriptToAddress(o.script, net) ?? "(no address)"}`)])),
+      matches ? notice("good", tr("This is the transaction built here, signed.")) : notice("bad",
+        h("strong", {}, tr("This isn't the transaction built here.")),
+        h("p", {}, tr("It has other inputs or outputs than the ones you reviewed. Check them below.")),
+        h("label", { class: "check" }, h("input", { id: "ack-different", type: "checkbox", onchange: (e) => (go.disabled = !e.target.checked) }), tr("I know what this transaction is, and want to broadcast it."))),
+      h("dl", {}, h("dt", {}, tr("Transaction")), h("dd", { class: "mono", id: "signed-txid" }, txid),
+        ...tx.outputs.flatMap((o, i) => [h("dt", {}, tr("Output {i}", { i })), h("dd", { class: "mono" }, tr("{amount} to {address}", { amount: btc(o.value), address: scriptToAddress(o.script, net) ?? tr("(no address)") }))])),
       h("div", { class: "row" }, go), message);
   }
 
   sendDone() {
     const { txid, agrees } = this.send.sent;
     return h("div", {},
-      h("h2", {}, "Sent"),
-      notice("good", "The server took the transaction."),
-      agrees ? null : notice("bad", "The server answered with a different transaction id. Check the transaction below on another server."),
+      h("h2", {}, tr("Sent")),
+      notice("good", tr("The server took the transaction.")),
+      agrees ? null : notice("bad", tr("The server answered with a different transaction id. Check the transaction below on another server.")),
       h("p", { class: "mono", id: "sent-txid" }, txid),
       h("div", { class: "row" }, h("button", { id: "send-another", onclick: () => {
         this.send = null;
         this.tab = "overview";
         this.render();
-      } }, "Done")));
+      } }, tr("Done"))));
   }
 
   // ---- Settings ----
@@ -19979,38 +20414,38 @@ class App {
     const message = h("div", {});
     const forget = h("div", { class: "row" });
     const askForget = () => mount(forget, h("button", { id: "forget", class: "danger", onclick: () => mount(forget,
-      h("span", {}, "Forget this account in this browser?"),
+      h("span", {}, tr("Forget this account in this browser?")),
       h("button", { id: "forget-yes", class: "danger", onclick: () => {
         this.state.accounts = this.state.accounts.filter((x) => x.id !== r.id);
         this.state.current = this.state.accounts[0]?.id ?? null;
         this.reload();
-      } }, "Yes, forget it"),
-      h("button", { onclick: askForget }, "Keep it")) }, "Forget this account"));
+      } }, tr("Yes, forget it")),
+      h("button", { onclick: askForget }, tr("Keep it"))) }, tr("Forget this account")));
     askForget();
     return h("div", {},
-      h("div", { class: "panel" }, h("h2", {}, "Account"),
-        h("label", { for: "rename" }, "Name"), name,
-        h("label", { for: "gap" }, "Gap limit"), gap, message,
+      h("div", { class: "panel" }, h("h2", {}, tr("Account")),
+        h("label", { for: "rename" }, tr("Name")), name,
+        h("label", { for: "gap" }, tr("Gap limit")), gap, message,
         h("div", { class: "row" }, h("button", { id: "save-settings", onclick: () => {
           const n = Number(gap.value);
           if (!Number.isInteger(n) || n < 1 || n > 1000) {
-            mount(message, notice("bad", "The gap limit is a whole number from 1 to 1000."));
+            mount(message, notice("bad", tr("The gap limit is a whole number from 1 to 1000.")));
             return;
           }
           r.gapLimit = n;
           r.label = name.value.trim() || r.label;
           this.reload();
-        } }, "Save")),
-        h("h3", {}, "Public key"),
-        h("p", { class: "small dim" }, "Anyone holding this can see the whole wallet, though they can't spend."),
+        } }, tr("Save"))),
+        h("h3", {}, tr("Public key")),
+        h("p", { class: "small dim" }, tr("Anyone holding this can see the whole wallet, though they can't spend.")),
         h("dl", {},
-          h("dt", {}, "Path"), h("dd", { class: "mono" }, accountPath(a)),
-          h("dt", {}, "Fingerprint"), h("dd", { class: "mono" }, a.fingerprint || "none"),
+          h("dt", {}, tr("Path")), h("dd", { class: "mono" }, accountPath(a)),
+          h("dt", {}, tr("Fingerprint")), h("dd", { class: "mono" }, a.fingerprint || tr("none")),
           h("dt", {}, slip132.name), h("dd", { class: "mono" }, slip132.key),
-          h("dt", {}, "Descriptor"), h("dd", { class: "mono", id: "descriptor" }, accountDescriptor(a))),
+          h("dt", {}, tr("Descriptor")), h("dd", { class: "mono", id: "descriptor" }, accountDescriptor(a))),
         forget),
-      h("div", { class: "panel" }, h("h2", {}, "Server"),
-        h("p", {}, "Now: ", h("span", { class: "mono", id: "current-server" }, this.state.servers[r.network])),
+      h("div", { class: "panel" }, h("h2", {}, tr("Server")),
+        h("p", {}, tr("Now:"), " ", h("span", { class: "mono", id: "current-server" }, this.state.servers[r.network])),
         this.serverChooser()));
   }
 
@@ -20032,6 +20467,7 @@ const { installCrypto } = __mod("src/crypto.js");
 const { parseServer } = __mod("src/esplora.js");
 const { load } = __mod("src/store.js");
 const { App } = __mod("src/ui.js");
+const { setLanguage, startLanguage, language } = __mod("src/i18n.js");
 
 // Narrows the build's connect-src to the one server this page was started
 // with (docs/ESPLORA.md, "Content-Security-Policy"). Before any request;
@@ -20050,6 +20486,8 @@ function narrowPolicy(server) {
 }
 
 const state = load();
+setLanguage(startLanguage(state.language, navigator.languages || [navigator.language]));
+document.documentElement.lang = language();
 const record = state.accounts.find((a) => a.id === state.current) || state.accounts[0] || null;
 narrowPolicy(record ? state.servers[record.network] : null);
 installCrypto();

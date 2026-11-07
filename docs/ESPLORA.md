@@ -1,7 +1,7 @@
 # W0: the Esplora client
 
-GapWallet is the online half of the zerogap pipeline (`docs/plans/BITCOIN.md`
-in the zerogap repository). It holds public keys only: it watches an account,
+GapWallet is the online half of the ZeroGap pipeline (`docs/plans/BITCOIN.md`
+in the ZeroGap repository). It holds public keys only: it watches an account,
 builds PSBTs and broadcasts what the offline signer signed. This file says
 how it talks to a server. It is written before the code; a later indexer needs
 to serve exactly what is in "Endpoints", with the same shapes.

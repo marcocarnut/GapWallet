@@ -18,6 +18,7 @@ import { readPayload } from "../vendor/zerogap/psbt/transport.js";
 import { isPsbt, parsePsbt } from "../vendor/zerogap/psbt/psbt.js";
 import { parseTx, txid as txidOf, serializeTx } from "../vendor/zerogap/psbt/tx.js";
 import { BBQrError, FILE_TYPES, Joiner, isBBQr } from "../vendor/zerogap/bbqr.js";
+import { tr } from "./i18n.js";
 
 // The most a series may unpack to. A signed transaction is far smaller; this
 // keeps a hostile code from filling memory.
@@ -34,7 +35,7 @@ function txResult(bytes, pending) {
   // Every input here is segwit. Legacy accounts (S3) have no witness: this has
   // to change with them.
   if (tx.inputs.some((i) => i.witness.length === 0)) {
-    throw new DecodeError("This transaction isn't signed yet.");
+    throw new DecodeError(tr("This transaction isn't signed yet."));
   }
   const txid = txidOf(tx);
   return { kind: "tx", tx, txid, hex: toHex(serializeTx(tx)), matches: Boolean(pending) && txid === pending.txid };
@@ -49,7 +50,7 @@ export function readSigned(text, bytes, pending) {
 function fromSeries({ type, bytes }, pending) {
   if (type === "P") return psbtResult(bytes, pending);
   if (type === "T") return txResult(bytes, pending);
-  throw new DecodeError(`This series holds ${FILE_TYPES[type] ? `a ${FILE_TYPES[type]} file` : "an unknown file"}, not a transaction.`);
+  throw new DecodeError(FILE_TYPES[type] ? tr("This series holds a {kind} file, not a transaction.", { kind: FILE_TYPES[type] }) : tr("This series holds an unknown file, not a transaction."));
 }
 
 // Codes as they arrive: whole ones, and the parts of a series in any order,
@@ -86,7 +87,7 @@ export class SignedReader {
     } catch (e) {
       if (!(e instanceof BBQrError)) throw e;
       this.joiner.reset();
-      throw new DecodeError(`This series can't be read, so it was started over: ${e.message}`);
+      throw new DecodeError(tr("This series can't be read, so it was started over: {reason}", { reason: e.message }));
     }
   }
 }
@@ -95,24 +96,24 @@ const isText = (bytes) => bytes.every((b) => b === 9 || b === 10 || b === 13 || 
 
 // The same checks as a code, from a file's bytes.
 export function readFile(bytes, pending) {
-  if (bytes.length === 0) throw new DecodeError("The file is empty.");
-  if (bytes.length > MAX_FILE) throw new DecodeError("The file is too big to be a transaction.");
+  if (bytes.length === 0) throw new DecodeError(tr("The file is empty."));
+  if (bytes.length > MAX_FILE) throw new DecodeError(tr("The file is too big to be a transaction."));
   if (isPsbt(bytes)) return psbtResult(bytes, pending);
   if (!isText(bytes)) {
     try {
       return txResult(bytes, pending);
     } catch (e) {
       if (!(e instanceof DecodeError)) throw e;
-      throw new DecodeError(`This file isn't a transaction: ${e.message}`);
+      throw new DecodeError(tr("This file isn't a transaction: {reason}", { reason: e.message }));
     }
   }
   const lines = new TextDecoder().decode(bytes).split(/\s+/).filter(Boolean);
-  if (lines.length === 0) throw new DecodeError("The file is empty.");
+  if (lines.length === 0) throw new DecodeError(tr("The file is empty."));
   if (lines.length === 1 || !lines.every(isBBQr)) return readSigned(lines.join(""), null, pending);
   const reader = new SignedReader(pending);
   let got;
   for (const line of lines) got = reader.add(line);
-  if (got.kind === "progress") throw new DecodeError(`This file has ${got.have} of the series' ${got.total} codes.`);
+  if (got.kind === "progress") throw new DecodeError(tr("This file has {have} of the series' {total} codes.", got));
   return got;
 }
 
@@ -131,12 +132,12 @@ export class KeyReader {
       if (!step.done) return { have: step.have, total: step.total };
       const { type, bytes } = this.joiner.result();
       this.joiner.reset();
-      if (type !== "U") throw new DecodeError("This series doesn't hold text, so it isn't a public key.");
+      if (type !== "U") throw new DecodeError(tr("This series doesn't hold text, so it isn't a public key."));
       return { text: new TextDecoder().decode(bytes) };
     } catch (e) {
       if (!(e instanceof BBQrError)) throw e;
       this.joiner.reset();
-      throw new DecodeError(`This series can't be read, so it was started over: ${e.message}`);
+      throw new DecodeError(tr("This series can't be read, so it was started over: {reason}", { reason: e.message }));
     }
   }
 }

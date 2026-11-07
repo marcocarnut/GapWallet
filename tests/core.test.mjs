@@ -297,7 +297,7 @@ test("selection: exact, smallest cover, largest first, dust to fee, determinism"
 
 test("selection: unconfirmed left alone, by hand or not; dust-sized coins skipped; send everything", () => {
   const coins = [coin(5000, 1), coin(70000, 2, false), coin(50, 3)];
-  assert.throws(() => selectCoins({ coins, amount: 40000, scripts: SCRIPT, rate: 1 }), (e) => e instanceof SelectError && /70000 sat is unconfirmed/.test(e.message));
+  assert.throws(() => selectCoins({ coins, amount: 40000, scripts: SCRIPT, rate: 1 }), (e) => e instanceof SelectError && /70,000 sat is unconfirmed/.test(e.message));
   const hand = selectCoins({ coins: [coins[1]], manual: true, amount: 40000, scripts: SCRIPT, rate: 1 });
   assert.equal(hand.inputs.length, 1);
   assert.equal(hand.change, 70000 - 40000 - 141);
@@ -316,7 +316,7 @@ test("estimates as a real server gives them", () => {
 
 test("fee warnings", () => {
   assert.equal(feeWarnings({ fee: 100, amount: 100000, rate: 1, estimate: 1 }).length, 0);
-  assert.match(feeWarnings({ fee: 6000, amount: 100000, rate: 1, estimate: 1 })[0], /6\.0%/);
+  assert.match(feeWarnings({ fee: 6000, amount: 100000, rate: 1, estimate: 1 })[0], / 6% /);
   assert.match(feeWarnings({ fee: 10, amount: 100000, rate: 40, estimate: 10 })[0], /3 times/);
 });
 

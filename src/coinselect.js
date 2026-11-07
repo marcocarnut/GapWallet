@@ -4,6 +4,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { compactSizeLength } from "../vendor/zerogap/psbt/bytes.js";
+import { formatDecimal, tr } from "./i18n.js";
 
 export const MIN_RATE = 0.1, MAX_RATE = 10000;
 export const DUST = { p2wpkh: 294, p2sh: 540, p2pkh: 546, p2wsh: 330, p2tr: 330 };
@@ -68,19 +69,19 @@ function settle(inputs, amount, scripts, rate, kind) {
 // sendAll, kind (of KINDS: the account's) } -> settle()'s, plus `amount`, `skipped` (coins worth less than
 // they cost to spend).
 export function selectCoins({ coins, amount, scripts, rate, manual = false, sendAll = false, kind = KINDS.p2wpkh }) {
-  if (coins.length === 0) throw new SelectError(manual ? "Choose at least one coin." : "There are no coins to spend.");
+  if (coins.length === 0) throw new SelectError(manual ? tr("Choose at least one coin.") : tr("There are no coins to spend."));
   if (sendAll) {
     const usable = manual ? coins : coins.filter((c) => c.confirmed);
-    if (usable.length === 0) throw new SelectError("There are no confirmed coins yet.");
+    if (usable.length === 0) throw new SelectError(tr("There are no confirmed coins yet."));
     const total = usable.reduce((sum, c) => sum + c.value, 0);
     const vsize = vsizeOf(usable.length, scripts, kind);
     const fee = feeFor(vsize, rate);
-    if (total - fee <= 0) throw new SelectError("These coins don't cover the fee at this rate.");
+    if (total - fee <= 0) throw new SelectError(tr("These coins don't cover the fee at this rate."));
     return { inputs: usable, change: 0, fee, dropped: 0, vsize, amount: total - fee, skipped: 0 };
   }
   if (manual) {
     const got = settle(coins, amount, scripts, rate, kind);
-    if (!got) throw new SelectError("The coins you chose don't cover the amount and the fee.");
+    if (!got) throw new SelectError(tr("The coins you chose don't cover the amount and the fee."));
     return { ...got, amount, skipped: 0 };
   }
 
@@ -111,14 +112,14 @@ export function selectCoins({ coins, amount, scripts, rate, manual = false, send
     const got = settle([...inputs], amount, scripts, rate, kind);
     if (got) return done(got);
   }
-  const held = unconfirmed > 0 ? ` Another ${unconfirmed} sat is unconfirmed: choose those coins by hand to spend them.` : "";
-  throw new SelectError(`Confirmed coins don't cover the amount and the fee.${held}`);
+  throw new SelectError(unconfirmed > 0 ? tr("Confirmed coins don't cover the amount and the fee. Another {n} sat is unconfirmed: choose those coins by hand to spend them.", { n: unconfirmed })
+    : tr("Confirmed coins don't cover the amount and the fee."));
 }
 
 // What the user must acknowledge. `estimate`: the 1-block rate, if known.
 export function feeWarnings({ fee, amount, rate, estimate }) {
   const out = [];
-  if (fee > amount * 0.05) out.push(`The fee is ${((fee / amount) * 100).toFixed(1)}% of the amount sent.`);
-  if (estimate && rate > estimate * 3) out.push(`${rate} sat/vB is more than 3 times the server's 1-block estimate (${estimate}).`);
+  if (fee > amount * 0.05) out.push(tr("The fee is {percent}% of the amount sent.", { percent: formatDecimal((fee / amount) * 100, 1) }));
+  if (estimate && rate > estimate * 3) out.push(tr("{rate} sat/vB is more than 3 times the server's 1-block estimate ({estimate}).", { rate, estimate }));
   return out;
 }

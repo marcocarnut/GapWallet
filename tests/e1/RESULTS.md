@@ -6,7 +6,7 @@ use the E1 test wallet, whose words are in no file.
 
 ## Part 1, the attacks
 
-2026-11-07 07:40 -03. GapWallet e1-wallet (on 0e4ee8f) with `tests/e1/attacks.mjs`, signer zerogap
+2026-11-07 07:40 -03. GapWallet e1-wallet (on 0e4ee8f) with `tests/e1/attacks.mjs`, signer ZeroGap
 f1973eb, in the simulator at its default 640x480, PSBTs read by its synthetic
 camera as Base43. Each case was run on both accounts, `84h/1h/0h` and `49h/1h/0h`:
 22 cases, 0 failed. Two inputs (60000 and 70000 sat, at indexes 0 and 1, so "top"
@@ -40,7 +40,7 @@ called far at index 1000 or 1001 is still out of the page's reach in that case.
 ## Part 1, the test wallet
 
 Final pass, finished 2026-11-07 08:02 -03. GapWallet e1-wallet (on 47fd94d), `gapwallet.html`
-unchanged from main, signer zerogap f1973eb, simulator at 640x480. `tests/e1/rows.mjs`
+unchanged from main, signer ZeroGap f1973eb, simulator at 640x480. `tests/e1/rows.mjs`
 drives the real page in Chromium; each code is read off its canvas into the
 simulator's synthetic camera, and the signer's answer off a screenshot, then pasted
 into the page. No physical camera. 22 cases, 0 failed, 0 POSTs. The fingerprint row's
@@ -65,7 +65,7 @@ equals the signer's, before and after the keys.
 | Wrong master fingerprint on import | Sign disabled, "key 7d8108a9 signs 0", change counted as sent, input refused: "its key is from another wallet (fingerprint deadbeef; this wallet is 7d8108a9)". |
 
 Needs funding: a series of 15 codes. These coins give at most 8 (`84h`, 3 inputs), as
-"up to 16" shows; it takes more inputs. zerogap's own suite reads 14 and 17 parts
+"up to 16" shows; it takes more inputs. ZeroGap's own suite reads 14 and 17 parts
 through its Joiner and a 30-input series in, but that isn't this page. Likewise the
 signer's answer needing a series: here it was asked for by the button.
 
@@ -82,7 +82,7 @@ pass made 103 reads, one every 2 s, and no 429.
 
 ## Part 3, on signet, in the simulator
 
-2026-11-07, 10:41 to 11:38 -03. GapWallet e1-spend (on 338728b), signer zerogap main
+2026-11-07, 10:41 to 11:38 -03. GapWallet e1-spend (on 338728b), signer ZeroGap main
 4f6c454 in the simulator at 640x480, `tests/e1/spend.mjs`. The real page in Chromium,
 QR codes only between it and the signer, and the page's own Broadcast button, which
 reached blockstream.info's signet through the script's proxy. The go-ahead was the
