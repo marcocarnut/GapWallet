@@ -464,7 +464,6 @@ export class App {
     const send = this.send;
     send.spend = spend;
     send.warnings = feeWarnings({ fee: spend.fee, amount: spend.amount, rate, estimate: send.estimates?.[1] });
-    send.includePrevious = true;
     send.signed = null;
   }
 
@@ -490,7 +489,7 @@ export class App {
 
   sendShow() {
     const send = this.send;
-    const bytes = psbtBytes(this.account, send.spend, { includePrevious: send.includePrevious });
+    const bytes = psbtBytes(this.account, send.spend);
     const text = electrumQrText(bytes);
     const single = text.length <= MAX_ALPHANUMERIC ? makeQr(text) : null;
     const b64 = toBase64(bytes);
@@ -501,26 +500,18 @@ export class App {
         this.render();
       } }), name);
     const parts = [h("h2", {}, "Sign it"),
-      h("p", { class: "small dim", id: "psbt-size" }, `PSBT: ${bytes.length} bytes${send.includePrevious ? "" : ". Previous transactions left out."}`),
+      h("p", { class: "small dim", id: "psbt-size" }, `PSBT: ${bytes.length} bytes`),
       choose("base43", "One code (Base43: Electrum, and zerogap's signer)", !single),
-      choose("bbqr", "BBQr: a series of codes (Coldcard, Sparrow)", false)];
-    if (!single) parts.push(notice("warn", `This PSBT doesn't fit in one QR code: ${text.length} characters, ${MAX_ALPHANUMERIC} at most. It goes out as a series. zerogap's signer doesn't read series yet.`));
+      choose("bbqr", "BBQr: a series of codes (zerogap's signer, Coldcard, Sparrow)", false)];
+    if (!single) parts.push(notice("warn", `This PSBT doesn't fit in one QR code: ${text.length} characters, ${MAX_ALPHANUMERIC} at most. It goes out as a series. Electrum doesn't read those: for Electrum, save the PSBT as a file.`));
     if (format === "base43") {
       const canvas = h("canvas", { class: "code", id: "psbt-qr" });
       drawQr(canvas, single, Math.max(2, Math.floor(620 / (single.size + 8))));
       parts.push(h("div", { class: "qr" }, canvas),
         h("p", { class: "small dim", id: "qr-info" }, `${text.length} characters, QR version ${single.version}`));
-      if (single.version > LARGE_QR_VERSION) parts.push(notice("warn", "This code is dense. If the camera can't read it, enlarge the window, use a series, or see the options below."));
+      if (single.version > LARGE_QR_VERSION) parts.push(notice("warn", "This code is dense. If the camera can't read it, enlarge the window or use a series."));
     } else {
       parts.push(this.series(bytes));
-    }
-    if (send.includePrevious && (!single || single.version > LARGE_QR_VERSION)) parts.push(this.dropPrevious());
-    if (!send.includePrevious) {
-      parts.push(notice("warn", "Previous transactions are left out of this PSBT: the signer can't prove the coins' amounts."),
-        h("div", { class: "row" }, h("button", { id: "restore-previous", class: "small", onclick: () => {
-          send.includePrevious = true;
-          this.render();
-        } }, "Put them back")));
     }
     parts.push(h("details", {}, h("summary", {}, "The PSBT as text or a file"),
       h("textarea", { id: "psbt-text", readonly: true }, b64),
@@ -595,18 +586,6 @@ export class App {
   stopSeries() {
     clearInterval(this.seriesTimer);
     this.seriesTimer = null;
-  }
-
-  dropPrevious() {
-    const drop = h("button", { id: "drop-previous", class: "danger", disabled: true, onclick: () => {
-      this.send.includePrevious = false;
-      this.render();
-    } }, "Leave out the previous transactions");
-    return notice("warn",
-      h("strong", {}, "You can make the code smaller, at a cost."),
-      h("p", {}, "The PSBT carries each coin's previous transaction, so the signer can prove what the coin is worth. Without it, the signer takes the amounts as given: a lying server could trick it into paying a much higher fee than it shows (the fee attack on segwit)."),
-      h("label", { class: "check" }, h("input", { id: "ack-previous", type: "checkbox", onchange: (e) => (drop.disabled = !e.target.checked) }), "I understand, and I got these coins' amounts from a server I trust."),
-      h("div", { class: "row" }, drop));
   }
 
   sendScan() {

@@ -23,7 +23,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Xdrt848RjVxqUPn3kVtqjKoq+++0ZwmAqytTdfSgJCQ='; style-src 'sha256-8RKkCe1K1ezazRjHwMgQxI+dGZBVWQRrwU6EXiT09gc='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-nPsSD+QVZfGZeA7R0jD96Md4/5TkD9XBgkdqEtOPzBk='; style-src 'sha256-8RKkCe1K1ezazRjHwMgQxI+dGZBVWQRrwU6EXiT09gc='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GapWallet</title>
@@ -5850,7 +5850,7 @@ __exports["PsbtError"] = PsbtError; __exports["computeLocktime"] = computeLockti
 // Builds the transaction and its PSBT (BITCOIN.md, "PSBTs"; docs/ESPLORA.md).
 //
 //   buildSpend(account, scan, request, client, { random }) -> Spend
-//   psbtBytes(account, spend, { includePrevious = true }) -> Uint8Array
+//   psbtBytes(account, spend) -> Uint8Array
 //
 // The server is not believed: each coin's previous transaction is hashed
 // here, and its output must match what the server said and what we derive.
@@ -5992,13 +5992,13 @@ function witnessUtxo(coin) {
 
 const NO_KEY = new Uint8Array(0);
 
-function psbtBytes(account, spend, { includePrevious = true } = {}) {
+function psbtBytes(account, spend) {
   if (!account.fingerprint) throw new BuildError("This account has no master fingerprint.");
   const global = { entries: [] };
   setEntry(global, GLOBAL.UNSIGNED_TX, NO_KEY, serializeTx(spend.tx, { withWitness: false }));
   const inputs = spend.inputs.map((c) => {
     const map = { entries: [] };
-    if (includePrevious) setEntry(map, IN.NON_WITNESS_UTXO, NO_KEY, c.previous);
+    setEntry(map, IN.NON_WITNESS_UTXO, NO_KEY, c.previous);
     setEntry(map, IN.WITNESS_UTXO, NO_KEY, witnessUtxo(c));
     if (c.entry.redeemScript) setEntry(map, IN.REDEEM_SCRIPT, NO_KEY, c.entry.redeemScript);
     setEntry(map, IN.BIP32_DERIVATION, c.entry.pubkey, derivationValue(account, c.entry));
@@ -19741,7 +19741,6 @@ class App {
     const send = this.send;
     send.spend = spend;
     send.warnings = feeWarnings({ fee: spend.fee, amount: spend.amount, rate, estimate: send.estimates?.[1] });
-    send.includePrevious = true;
     send.signed = null;
   }
 
@@ -19767,7 +19766,7 @@ class App {
 
   sendShow() {
     const send = this.send;
-    const bytes = psbtBytes(this.account, send.spend, { includePrevious: send.includePrevious });
+    const bytes = psbtBytes(this.account, send.spend);
     const text = electrumQrText(bytes);
     const single = text.length <= MAX_ALPHANUMERIC ? makeQr(text) : null;
     const b64 = toBase64(bytes);
@@ -19778,26 +19777,18 @@ class App {
         this.render();
       } }), name);
     const parts = [h("h2", {}, "Sign it"),
-      h("p", { class: "small dim", id: "psbt-size" }, `PSBT: ${bytes.length} bytes${send.includePrevious ? "" : ". Previous transactions left out."}`),
+      h("p", { class: "small dim", id: "psbt-size" }, `PSBT: ${bytes.length} bytes`),
       choose("base43", "One code (Base43: Electrum, and zerogap's signer)", !single),
-      choose("bbqr", "BBQr: a series of codes (Coldcard, Sparrow)", false)];
-    if (!single) parts.push(notice("warn", `This PSBT doesn't fit in one QR code: ${text.length} characters, ${MAX_ALPHANUMERIC} at most. It goes out as a series. zerogap's signer doesn't read series yet.`));
+      choose("bbqr", "BBQr: a series of codes (zerogap's signer, Coldcard, Sparrow)", false)];
+    if (!single) parts.push(notice("warn", `This PSBT doesn't fit in one QR code: ${text.length} characters, ${MAX_ALPHANUMERIC} at most. It goes out as a series. Electrum doesn't read those: for Electrum, save the PSBT as a file.`));
     if (format === "base43") {
       const canvas = h("canvas", { class: "code", id: "psbt-qr" });
       drawQr(canvas, single, Math.max(2, Math.floor(620 / (single.size + 8))));
       parts.push(h("div", { class: "qr" }, canvas),
         h("p", { class: "small dim", id: "qr-info" }, `${text.length} characters, QR version ${single.version}`));
-      if (single.version > LARGE_QR_VERSION) parts.push(notice("warn", "This code is dense. If the camera can't read it, enlarge the window, use a series, or see the options below."));
+      if (single.version > LARGE_QR_VERSION) parts.push(notice("warn", "This code is dense. If the camera can't read it, enlarge the window or use a series."));
     } else {
       parts.push(this.series(bytes));
-    }
-    if (send.includePrevious && (!single || single.version > LARGE_QR_VERSION)) parts.push(this.dropPrevious());
-    if (!send.includePrevious) {
-      parts.push(notice("warn", "Previous transactions are left out of this PSBT: the signer can't prove the coins' amounts."),
-        h("div", { class: "row" }, h("button", { id: "restore-previous", class: "small", onclick: () => {
-          send.includePrevious = true;
-          this.render();
-        } }, "Put them back")));
     }
     parts.push(h("details", {}, h("summary", {}, "The PSBT as text or a file"),
       h("textarea", { id: "psbt-text", readonly: true }, b64),
@@ -19872,18 +19863,6 @@ class App {
   stopSeries() {
     clearInterval(this.seriesTimer);
     this.seriesTimer = null;
-  }
-
-  dropPrevious() {
-    const drop = h("button", { id: "drop-previous", class: "danger", disabled: true, onclick: () => {
-      this.send.includePrevious = false;
-      this.render();
-    } }, "Leave out the previous transactions");
-    return notice("warn",
-      h("strong", {}, "You can make the code smaller, at a cost."),
-      h("p", {}, "The PSBT carries each coin's previous transaction, so the signer can prove what the coin is worth. Without it, the signer takes the amounts as given: a lying server could trick it into paying a much higher fee than it shows (the fee attack on segwit)."),
-      h("label", { class: "check" }, h("input", { id: "ack-previous", type: "checkbox", onchange: (e) => (drop.disabled = !e.target.checked) }), "I understand, and I got these coins' amounts from a server I trust."),
-      h("div", { class: "row" }, drop));
   }
 
   sendScan() {

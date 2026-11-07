@@ -1,7 +1,7 @@
 // Builds the transaction and its PSBT (BITCOIN.md, "PSBTs"; docs/ESPLORA.md).
 //
 //   buildSpend(account, scan, request, client, { random }) -> Spend
-//   psbtBytes(account, spend, { includePrevious = true }) -> Uint8Array
+//   psbtBytes(account, spend) -> Uint8Array
 //
 // The server is not believed: each coin's previous transaction is hashed
 // here, and its output must match what the server said and what we derive.
@@ -143,13 +143,13 @@ function witnessUtxo(coin) {
 
 const NO_KEY = new Uint8Array(0);
 
-export function psbtBytes(account, spend, { includePrevious = true } = {}) {
+export function psbtBytes(account, spend) {
   if (!account.fingerprint) throw new BuildError("This account has no master fingerprint.");
   const global = { entries: [] };
   setEntry(global, GLOBAL.UNSIGNED_TX, NO_KEY, serializeTx(spend.tx, { withWitness: false }));
   const inputs = spend.inputs.map((c) => {
     const map = { entries: [] };
-    if (includePrevious) setEntry(map, IN.NON_WITNESS_UTXO, NO_KEY, c.previous);
+    setEntry(map, IN.NON_WITNESS_UTXO, NO_KEY, c.previous);
     setEntry(map, IN.WITNESS_UTXO, NO_KEY, witnessUtxo(c));
     if (c.entry.redeemScript) setEntry(map, IN.REDEEM_SCRIPT, NO_KEY, c.entry.redeemScript);
     setEntry(map, IN.BIP32_DERIVATION, c.entry.pubkey, derivationValue(account, c.entry));
