@@ -117,11 +117,16 @@ async function casesFor(purpose) {
       want: { sign: 2, checked: 0, stray: 1, refuted: 0, totals: lost } },
     { name: name("change in account 7"), row: "stray", psbt: moveChange(bytes, at, ours(other, 0)),
       want: { sign: 2, checked: 0, stray: 1, refuted: 0, totals: lost } },
-    // inputs are at index 0 and 1: the limit is 1 + CHANGE_GAP (1000)
-    { name: name("change at index 1002, just past the signer's limit"), row: "stray", psbt: moveChange(bytes, at, ours(account, 1002)),
-      want: { sign: 2, checked: 0, stray: 1, refuted: 0, totals: lost } },
-    { name: name("change at index 1001, the signer's limit"), row: "tolerated", psbt: moveChange(bytes, at, ours(account, 1001)),
-      want: { sign: 2, checked: 1, stray: 0, refuted: 0, totals: honest } },
+    // inputs are at index 0 and 1, so top is 1: green to top + 20, then change
+    // with a note (far) to top + 1000, then stray
+    { name: name("change at index 21 (top + 20), the last at home"), row: "home", psbt: moveChange(bytes, at, ours(account, 21)),
+      want: { sign: 2, checked: 1, stray: 0, far: 0, refuted: 0, totals: honest, notes: 0 } },
+    { name: name("change at index 22 (top + 21), the first far"), row: "far", psbt: moveChange(bytes, at, ours(account, 22)),
+      want: { sign: 2, checked: 1, stray: 0, far: 1, refuted: 0, totals: honest, notes: 1 } },
+    { name: name("change at index 1001 (top + 1000), the last far"), row: "far", psbt: moveChange(bytes, at, ours(account, 1001)),
+      want: { sign: 2, checked: 1, stray: 0, far: 1, refuted: 0, totals: honest, notes: 1 } },
+    { name: name("change at index 1002 (top + 1001), the first stray"), row: "stray", psbt: moveChange(bytes, at, ours(account, 1002)),
+      want: { sign: 2, checked: 0, stray: 1, far: 0, refuted: 0, totals: lost } },
     { name: name("witness UTXO lowered on both inputs"), row: "lowered", psbt: lowerAmounts(bytes, [0, 1]),
       want: { sign: 0, danger: true, totals: honest } },
     { name: name("witness UTXO lowered on one input"), row: "lowered", psbt: lowerAmounts(bytes, [0]),
@@ -176,8 +181,8 @@ function reviews(log) {
       continue;
     } else if ((m = /^totals: sent (\S+) sat, change (\S+) sat, fee (\S+) sat/.exec(line))) {
       Object.assign(at, { sent: m[1], change: m[2], fee: m[3] });
-    } else if ((m = /^change: (\d+) claimed, (\d+) checked, (\d+) stray, (\d+) unverified, (\d+) refuted/.exec(line))) {
-      Object.assign(at, { claimed: +m[1], checked: +m[2], stray: +m[3], unverified: +m[4], refuted: +m[5] });
+    } else if ((m = /^change: (\d+) claimed, (\d+) checked, (\d+) stray, (\d+) unverified, (\d+) refuted(?:, (\d+) far)?/.exec(line))) {
+      Object.assign(at, { claimed: +m[1], checked: +m[2], stray: +m[3], unverified: +m[4], refuted: +m[5], far: +(m[6] ?? 0) });
       found.push(at);
       at = null;
     } else {
@@ -192,12 +197,13 @@ function judge(c, got) {
   const bad = [];
   const same = (what, a, b) => { if (String(a) !== String(b)) bad.push(`${what}: ${a}, wanted ${b}`); };
   same("to sign", got.sign, w.sign);
-  for (const k of ["checked", "stray", "refuted"]) if (w[k] !== undefined) same(k, got[k], w[k]);
+  for (const k of ["checked", "stray", "far", "refuted"]) if (w[k] !== undefined) same(k, got[k], w[k]);
   if (w.totals) {
     same("sent", got.sent, w.totals.sent);
     same("change", got.change, w.totals.change);
     same("fee", got.fee, w.totals.fee);
   }
+  if (w.notes !== undefined) same("notes", got.notes.length, w.notes);
   const danger = got.notes.some((n) => n.startsWith("danger"));
   if (w.danger !== undefined) same("a red warning", danger, w.danger);
   return bad;
@@ -231,7 +237,7 @@ cases.forEach((c, i) => {
   const bad = got ? judge(c, got) : ["no review logged"];
   failed += bad.length ? 1 : 0;
   console.log(`${bad.length ? "FAIL" : "PASS"}  ${c.name}`);
-  if (got) console.log(`      ${got.sign} of ${got.inputs} to sign; sent ${got.sent}, change ${got.change}, fee ${got.fee}; ${got.checked} checked, ${got.stray} stray, ${got.refuted} refuted${got.notes.map((n) => `\n      ${n}`).join("")}`);
+  if (got) console.log(`      ${got.sign} of ${got.inputs} to sign; sent ${got.sent}, change ${got.change}, fee ${got.fee}; ${got.checked} checked, ${got.stray} stray, ${got.far} far, ${got.refuted} refuted${got.notes.map((n) => `\n      ${n}`).join("")}`);
   for (const b of bad) console.log(`      ${b}`);
 });
 console.log(`${cases.length} cases, ${failed} failed. Output in ${OUTDIR}`);

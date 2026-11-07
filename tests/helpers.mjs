@@ -37,7 +37,7 @@ export async function loadSigner() {
   const transport = await import(url("apps/signer/lib/psbt/transport.js"));
   const codes = await import(url("apps/signer/lib/codes.js"));
   const master = bip32.fromSeed(bip39.seedFromMnemonic(MNEMONIC, ""));
-  return { ref, bip32, sign, psbtLib, transport, codes, master };
+  return { ref, bip32, bip39, sign, psbtLib, transport, codes, master };
 }
 
 const json = (body) => ({ status: 200, body: JSON.stringify(body), type: "application/json" });
