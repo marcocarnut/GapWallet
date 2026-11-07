@@ -1,8 +1,8 @@
 # E1 results
 
-Passing cases one line each (`docs/E1.md`, "Results"). Nothing here has been
-broadcast. The attacks use BIP-39's public test phrase and no network; the wallet
-rows use the E1 test wallet, whose words are in no file.
+Passing cases one line each (`docs/E1.md`, "Results"). Only part 3 broadcasts. The
+attacks use BIP-39's public test phrase and no network; the wallet rows and part 3
+use the E1 test wallet, whose words are in no file.
 
 ## Part 1, the attacks
 
@@ -79,3 +79,44 @@ Earlier passes that day, commit unknown (lvglzero moved during them), aren't evi
 They also got this machine a 429 from blockstream.info: about five full passes in half
 an hour, each rescanning. That's why the script now reads through a cache: the final
 pass made 103 reads, one every 2 s, and no 429.
+
+## Part 3, on signet, in the simulator
+
+2026-11-07, 10:41 to 11:38 -03. GapWallet e1-spend (on 338728b), signer zerogap main
+4f6c454 in the simulator at 640x480, `tests/e1/spend.mjs`. The real page in Chromium,
+QR codes only between it and the signer, and the page's own Broadcast button, which
+reached blockstream.info's signet through the script's proxy. The go-ahead was the
+user's. Rate 1 sat/vB, gap limit 5 to spare the server's
+reads. 7 rows, 0 failed, no 429.
+
+| Account, form | Transaction | Inputs | Amount, fee (sat) | Change |
+| --- | --- | --- | --- | --- |
+| `84h`, Base43, to its own 0/3 | `15266ccc0cda25e6bf1c8423705210c8c39a870aa1707dceba93d2f10dcf5853` | 0/1 | 2000, 141 | 1/0, 2859 |
+| `84h`, series of 2, version 11 | `179e87ee472a4bd7e561374f80ce6acdc114eb6c8d6717e966d69284d4e2e2eb` | 0/0, 0/2 | 3000, 209 | 1/1, 10791 |
+| `49h`, Base43 | `813c950ef19e74136e550f08eba280b667e2da34c03490252176c9f791217bd4` | 0/0 | 2000, 165 | 1/0, 2935 |
+| `49h`, series of 2, version 12, to its own 0/2 | `eed799df42c8fcea0cdef99994a39fc3b7e833d47813a470ae1ed84bd5cf7c68` | 0/1, unconfirmed 1/0 | 3000, 257 | 1/1, 3778 |
+
+For each, checked by the script before the next broadcast: the signer's fee is the
+page's, its change checked; the page's txid is the signed one and the server's
+answer; the bytes sent have the SHA-256 the signer logged; after a rescan the coins
+moved, the change is at the expected index, and history shows the transaction once,
+as sent with amount plus fee, or as moved within the account with its fee.
+
+| Row | Result |
+| --- | --- |
+| A second spend | Change at 1/1 on both accounts, from the rescan's own next index. |
+| Confirmations | The page went from 1 to 2 on `84h`; `49h` confirmed, nothing unconfirmed left. |
+| Spending the same coin again | 84h 0/1, signed before the first broadcast on a page left behind, sent after it confirmed: "sendrawtransaction RPC error -25: bad-txns-inputs-missingorspent" shown, HTTP 400, one POST, nothing retried. Its txid, never on the chain: `fbb73734c200873eb4465ec290e84f5e54a860111486cad09f22bbe98538c0a3`. |
+
+Left: `84h` 1/1 10791, 1/0 2859, 0/3 2000 sat, kept for the hand-held test; `49h` 1/1
+3778, 0/2 3000 sat.
+
+The signer doesn't show a txid, on screen or in its log, so `docs/E1.md`'s "the one
+the signer showed" can only be the hash of the bytes, as above.
+
+After the last row the script stopped on its own final check, which counted the
+page's five allowed POSTs as unexpected. That check is fixed but, as the coins are
+spent, hasn't been run again. All five match the five sent. The same stop lost the count of
+reads. The script's first start, killed before any broadcast, made a few more.
+
+Not done: on the rig, which the same part asks for next.
