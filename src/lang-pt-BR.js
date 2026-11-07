@@ -272,4 +272,23 @@ export const PT_BR = {
   "Descriptor": "Descritor",
   "Server": "Servidor",
   "Now:": "Agora:",
+
+  // price.js and the value of the balance (W5)
+  "TEST ONLY — NO MONETARY VALUE": "APENAS TESTE — SEM VALOR MONETÁRIO",
+  "These are real bitcoins, with real monetary value.": "Estes são bitcoins de verdade, com valor monetário real.",
+  "Show their value in {currency}": "Mostrar o valor em {currency}",
+  "The price comes from {host}, which learns your IP address and when you look. Change it in Settings.": "A cotação vem de {host}, que fica sabendo o seu endereço IP e quando você consulta. Mude isso nas Configurações.",
+  "Fetching the price…": "Buscando a cotação…",
+  "Real bitcoins, but no price: {reason}": "Bitcoins de verdade, mas sem cotação: {reason}",
+  "About {amount} {currency}": "Cerca de {amount} {currency}",
+  "The price server's answer has no price in {currency}.": "A resposta do servidor de cotação não tem preço em {currency}.",
+  "The price server can't be reached. ({reason})": "Não foi possível falar com o servidor de cotação. ({reason})",
+  "The price server answered {status}.": "O servidor de cotação respondeu {status}.",
+  "Price": "Cotação",
+  "Don't show a price": "Não mostrar cotação",
+  "On mainnet accounts the balance shows what it's worth. Test networks show that their coins have no value, and fetch no price.": "Nas contas da mainnet, o saldo mostra quanto vale. As redes de teste mostram que as moedas delas não têm valor, e não buscam cotação.",
+  "The page asks the price server for the price and nothing else: no address, key or amount. The server learns your IP address and when you look, as the Esplora server does.": "A página pede ao servidor de cotação só a cotação e nada mais: nenhum endereço, chave ou valor. O servidor fica sabendo o seu endereço IP e quando você consulta, como o servidor Esplora.",
+  "Currency": "Moeda",
+  "Price server": "Servidor de cotação",
+  "= {rate} sat/vB": "= {rate} sat/vB",
 };

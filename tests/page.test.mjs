@@ -732,3 +732,73 @@ test("W4: pt-BR chosen in the header and kept; amounts read its way, the ambiguo
   assert.deepEqual(seen.errors, []);
   await ctx.close();
 });
+
+test("W5: test coins say they're worth nothing, and no price is fetched for them, even when one is chosen", { skip }, async () => {
+  chain = new Chain("signet");
+  chain.fund(addressAt(account(), 0, 0).address, 500000);
+  const quotes = [];
+  const quoteServer = await listen((q, r) => {
+    quotes.push(q.url);
+    r.writeHead(200, { ...cors, "Content-Type": "application/json" });
+    r.end('{"USD":50000}');
+  });
+  const { page, ctx } = await open();
+  await importAccount(page);
+  await chooseServer(page);
+  await page.waitForSelector("#balance");
+  assert.equal(await text(page, "#no-value"), "TEST ONLY — NO MONETARY VALUE");
+  assert.equal(await page.$eval("#no-value", (e) => getComputedStyle(e).fontWeight), "700");
+  await click(page, "#tab-settings");
+  await page.select("#price-currency", "USD");
+  await page.$eval("#price-url", (e) => { e.value = ""; });
+  await page.type("#price-url", `${urlOf(quoteServer)}/price`);
+  await Promise.all([page.waitForNavigation(), click(page, "#save-price")]);
+  await page.waitForSelector("#balance");
+  await hasText(page, "TEST ONLY");
+  assert.equal(await page.$("#fiat"), null);
+  assert.match(await fetchFrom(page, `${urlOf(quoteServer)}/price`), /^blocked/); // not in the policy either
+  assert.deepEqual(quotes, []);
+  await ctx.close();
+  quoteServer.close();
+});
+
+test("W5: mainnet coins are offered their price, which is asked for with nothing added, and shown in the language's way", { skip }, async () => {
+  const zpub = signer.bip32.serializeXpub(signer.bip32.neuter(signer.bip32.derive(signer.master, "m/84'/0'/0'")), "zpub");
+  const main = parseAccount(zpub, "mainnet", MASTER_FINGERPRINT);
+  chain = new Chain("mainnet");
+  chain.fund(addressAt(main, 0, 0).address, 123456789);
+  const quotes = [];
+  const quoteServer = await listen((q, r) => {
+    quotes.push(`${q.method} ${q.url} ${q.headers.cookie ?? ""}`);
+    r.writeHead(200, { ...cors, "Content-Type": "application/json" });
+    r.end('{"data":{"amount":"50000.00","base":"BTC","currency":"BRL"}}');
+  });
+  const { page, ctx, seen } = await open();
+  await importAccount(page, { key: zpub, network: "mainnet" });
+  await chooseServer(page);
+  await page.waitForSelector("#balance");
+  assert.equal(await page.$("#no-value"), null);
+  await hasText(page, "These are real bitcoins, with real monetary value.");
+  assert.equal(await text(page, "#show-price"), "Show their value in USD");
+  await hasText(page, "api.coinbase.com, which learns your IP address");
+  // nothing fetched before it's asked for
+  assert.equal(seen.requests.filter((u) => !u.startsWith(pageUrl) && !u.startsWith(chainUrl)).length, 0);
+
+  await page.select("#language", "pt-BR");
+  await click(page, "#tab-settings");
+  await hasText(page, "nenhum endereço, chave ou valor");
+  await page.select("#price-currency", "BRL");
+  assert.equal(await page.$eval("#price-url", (e) => e.value), "https://api.coinbase.com/v2/prices/BTC-BRL/spot");
+  await page.$eval("#price-url", (e) => { e.value = ""; });
+  await page.type("#price-url", `${urlOf(quoteServer)}/v2/prices/BTC-BRL/spot`);
+  await Promise.all([page.waitForNavigation(), click(page, "#save-price")]);
+  await page.waitForSelector("#fiat");
+  await page.waitForFunction(() => /Cerca de/.test(document.getElementById("fiat").textContent));
+  assert.equal(await text(page, "#fiat"), "Cerca de 61.728,39 BRL"); // 1,23456789 BTC at 50.000
+  assert.deepEqual([...new Set(quotes)], ["GET /v2/prices/BTC-BRL/spot "]);
+  // the policy holds for everything else
+  assert.match(await fetchFrom(page, otherUrl), /^blocked/);
+  assert.deepEqual(seen.errors, []);
+  await ctx.close();
+  quoteServer.close();
+});

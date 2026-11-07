@@ -43,6 +43,12 @@ export function formatDecimal(x, places = 2) {
   return `${x < 0 ? "-" : ""}${formatInt(Number(whole))}${trimmed ? marks().decimal + trimmed : ""}`;
 }
 
+// Cents as the language writes money: 1,234.56 or 1.234,56
+export function formatCents(cents) {
+  const n = Math.abs(Math.round(cents));
+  return `${cents < 0 ? "-" : ""}${formatInt(Math.floor(n / 100))}${marks().decimal}${String(n % 100).padStart(2, "0")}`;
+}
+
 const show = (v) => (typeof v === "number" ? (Number.isInteger(v) ? formatInt(v) : formatDecimal(v)) : String(v));
 
 export function tr(text, params = {}) {

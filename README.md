@@ -27,7 +27,7 @@ nothing to install.
 
 ## Status
 
-Milestones W1 and W2, the first part of W3, and W4, of the plan in ZeroGap's
+Milestones W1 and W2, the first part of W3, W4 and W5, of the plan in ZeroGap's
 `docs/plans/BITCOIN.md`.
 
 - P2WPKH (`wpkh(…)`, zpub, vpub) and P2SH-P2WPKH (`sh(wpkh(…))`, ypub, upub)
@@ -39,6 +39,9 @@ Milestones W1 and W2, the first part of W3, and W4, of the plan in ZeroGap's
 - One recipient per transaction.
 - English and Brazilian Portuguese, chosen in the upper right corner. Numbers
   are written the language's way (0.5 or 0,5); see "Languages".
+- Test coins are marked, in red under the balance, as having no monetary value.
+  On mainnet the balance can show its value in USD or BRL (`docs/ESPLORA.md`,
+  "What the balance is worth").
 
 ## How it's put together
 

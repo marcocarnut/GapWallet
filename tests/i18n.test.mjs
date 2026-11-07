@@ -65,6 +65,8 @@ test("amounts: what one language could misread is refused in both", () => {
     ["22.000.000", null, null], // more bitcoin than there is
     ["1.2.3", null, null],
     ["1,2,3", null, null],
+    ["1234,567", 123456700000, 123456700000], // no grouping of four: a decimal mark either way, and the page shows it
+    ["1234.567", 123456700000, 123456700000],
   ];
   for (const [typed, en, pt] of cases) {
     for (const [lang, want] of [["en", en], ["pt-BR", pt]]) {
@@ -95,6 +97,14 @@ test("amounts round trip through the language's own writing", () => {
   }
   assert.equal(inLanguage("pt-BR", () => formatBtc(2099999997690000)), "20.999.999,97690000");
   assert.equal(inLanguage("pt-BR", () => formatBtc(-150000000)), "-1,50000000");
+});
+
+test("money: cents the language's way", async () => {
+  const { formatCents } = await import("../src/i18n.js");
+  assert.equal(formatCents(61728394), "617,283.94");
+  assert.equal(inLanguage("pt-BR", () => formatCents(61728394)), "617.283,94");
+  assert.equal(formatCents(5), "0.05");
+  assert.equal(formatCents(-150), "-1.50");
 });
 
 test("fee rates take either mark and nothing else", () => {
