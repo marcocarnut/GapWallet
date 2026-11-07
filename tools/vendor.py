@@ -32,10 +32,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ZEROGAP = os.environ.get("ZEROGAP_DIR", os.path.join(ROOT, "..", "lvglzero"))
 CACHE = os.path.join(ROOT, ".cache")
 
-# Main at this commit. Re-pin after S1 merges: the PSBT library's home
-# moves from apps/psbtview/lib to apps/signer/lib/psbt.
-ZEROGAP_COMMIT = "e70edf8"
-PSBT_HOME = "apps/psbtview/lib/"
+# Main at this commit.
+ZEROGAP_COMMIT = "8cbf6eb"
+PSBT_HOME = "apps/signer/lib/psbt/"
 ZEROGAP_FILES = [("apps/signer/lib/bip32.js", "zerogap/bip32.js"),
                  ("apps/signer/lib/crypto.js", "zerogap/crypto.js"),
                  ("lib/js/bbqr.js", "zerogap/bbqr.js")] + [

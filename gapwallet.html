@@ -23,7 +23,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-nPsSD+QVZfGZeA7R0jD96Md4/5TkD9XBgkdqEtOPzBk='; style-src 'sha256-8RKkCe1K1ezazRjHwMgQxI+dGZBVWQRrwU6EXiT09gc='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-IVYAB8lcS+fUSPfjC90YdVkZHC4dLVqJilbD4SmH7GY='; style-src 'sha256-8RKkCe1K1ezazRjHwMgQxI+dGZBVWQRrwU6EXiT09gc='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GapWallet</title>
@@ -6094,7 +6094,7 @@ function readPayload(text, bytes = null) {
       parseTx(out);
     } catch (e) {
       if (!(e instanceof DecodeError)) throw e;
-      throw new DecodeError("This is a BBQr code (B$...). Only Electrum's single QR codes are read for now.");
+      throw new DecodeError("This is a BBQr code (B$...) with a damaged header.");
     }
   }
   return { encoding, bytes: out, kind };

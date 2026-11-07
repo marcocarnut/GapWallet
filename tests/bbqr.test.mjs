@@ -169,5 +169,6 @@ test("a file: raw, hex, Base43, Base64 PSBT, BBQr lines; the same checks as a co
   assert.throws(() => readFile(ascii("  \n"), pending), /empty/);
   assert.throws(() => readFile(Uint8Array.of(0, 1, 2, 200, 201), pending), /isn't a transaction/);
   assert.throws(() => readFile(ascii("hello there"), pending), /./);
+  assert.throws(() => readFile(ascii("B$ZT0300"), pending), /damaged header/);
   assert.throws(() => readFile(new Uint8Array(4 * 1024 * 1024 + 1), pending), /too big/);
 });
