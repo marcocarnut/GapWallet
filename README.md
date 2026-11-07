@@ -27,7 +27,7 @@ nothing to install.
 
 ## Status
 
-Milestones W1 and W2, the first part of W3, W4 and W5, of the plan in ZeroGap's
+Milestones W1 and W2, the first part of W3, and W4 to W6, of the plan in ZeroGap's
 `docs/plans/BITCOIN.md`.
 
 - P2WPKH (`wpkh(…)`, zpub, vpub) and P2SH-P2WPKH (`sh(wpkh(…))`, ypub, upub)
@@ -39,9 +39,14 @@ Milestones W1 and W2, the first part of W3, W4 and W5, of the plan in ZeroGap's
 - One recipient per transaction.
 - English and Brazilian Portuguese, chosen in the upper right corner. Numbers
   are written the language's way (0.5 or 0,5); see "Languages".
+- Receive addresses can be marked handed out, with who they went to, and
+  transactions can have notes. Both export and import as BIP-329 labels, the
+  format Sparrow and Electrum read (`docs/ESPLORA.md`, "Your own records").
 - Test coins are marked, in red under the balance, as having no monetary value.
   On mainnet the balance can show its value in USD or BRL (`docs/ESPLORA.md`,
-  "What the balance is worth").
+  "What the balance is worth"). The default quote server's answer (Coinbase's
+  spot price) is read as their documentation describes it: the tests use a
+  stand-in, and it hasn't been tried against the live server from here.
 
 ## How it's put together
 

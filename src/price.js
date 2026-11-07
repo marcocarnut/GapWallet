@@ -40,8 +40,9 @@ export function parsePriceUrl(text) {
 }
 
 // The price in the answer. Understands the answers of the common free quote
-// servers: a bare number; Coinbase's { data: { amount } }; CoinGecko's
-// { bitcoin: { brl } }; mempool.space's { USD }.
+// servers: a bare number; Coinbase's { data: { amount, currency } }; CoinGecko's
+// { bitcoin: { brl } }; mempool.space's { USD }. Only the bare number can't say
+// which currency it is in: that one is taken on trust from Settings.
 export function parsePrice(text, currency) {
   const fail = () => { throw new PriceError(tr("The price server's answer has no price in {currency}.", { currency })); };
   const number = (v) => {
@@ -56,8 +57,12 @@ export function parsePrice(text, currency) {
   } catch {
     return fail();
   }
-  const found = [j?.data?.currency === undefined || j?.data?.currency === currency ? j?.data?.amount : undefined,
-    j?.bitcoin?.[currency.toLowerCase()], j?.[currency]].map(number).find(Boolean);
+  // An answer that names its currency must name the chosen one: a BRL URL set
+  // for USD mustn't show as dollars. Coinbase's always names it.
+  if (j?.data?.amount !== undefined && j.data.currency !== currency) {
+    throw new PriceError(tr("The price server answered in {got}, not {currency}.", { got: String(j.data.currency ?? "?"), currency }));
+  }
+  const found = [j?.data?.amount, j?.bitcoin?.[currency.toLowerCase()], j?.[currency]].map(number).find(Boolean);
   return found ?? fail();
 }
 

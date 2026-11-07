@@ -14,6 +14,7 @@ import { MAX_ALPHANUMERIC, Scanner, drawQr, makeQr } from "./qr.js";
 import { parseBtc, parseDecimal, formatBtc } from "./amount.js";
 import { LANGUAGES, formatCents, formatDate, formatDecimal, language, plural, setLanguage, tr } from "./i18n.js";
 import { save } from "./store.js";
+import { LabelError, MAX_FILE as MAX_LABEL_FILE, MAX_LABEL, clean, exportLabels, importLabels, labelsOf, ownAddresses, saveLabels } from "./labels.js";
 import { CURRENCIES, PRICE_DEFAULTS, PriceError, fetchPrice, parsePriceUrl, valueInCents } from "./price.js";
 import { toBase64 } from "../vendor/zerogap/psbt/bytes.js";
 import { electrumQrText } from "../vendor/zerogap/psbt/transport.js";
@@ -128,6 +129,7 @@ export class App {
   nav() {
     const tabs = { overview: "Overview", receive: "Receive", send: "Send", settings: "Settings" }; // keys for tr()
     return h("nav", { role: "tablist" }, ...Object.entries(tabs).map(([id, name]) => h("button", { id: `tab-${id}`, role: "tab", "aria-selected": String(this.tab === id), onclick: () => {
+      if (id === "receive") this.receiveIndex = undefined; // coming back: a fresh address, past those handed out
       this.tab = id;
       this.render();
     } }, tr(name))));
@@ -383,9 +385,31 @@ export class App {
   historyRow(t) {
     const when = t.height === null ? tr("unconfirmed") : t.time ? formatDate(t.time) : tr("block {height}", { height: t.height });
     const what = tr(HISTORY_KINDS[t.kind]);
+    const noteCell = h("div", { class: "note-cell" });
+    const showNote = () => {
+      const note = labelsOf(this.record).tx.get(t.txid);
+      mount(noteCell, note ? h("div", { class: "note" }, note) : null,
+        h("button", { class: "small link", "data-note": t.txid, onclick: editNote }, note ? tr("Edit note") : tr("Add a note")));
+    };
+    const editNote = () => {
+      const input = h("input", { type: "text", class: "note-input", maxlength: String(MAX_LABEL), "aria-label": tr("Note"), value: labelsOf(this.record).tx.get(t.txid) ?? "" });
+      const keep = () => {
+        const labels = labelsOf(this.record);
+        const note = clean(input.value).trim();
+        if (note) labels.tx.set(t.txid, note);
+        else labels.tx.delete(t.txid);
+        saveLabels(this.record, labels);
+        this.persist();
+        showNote();
+      };
+      input.addEventListener("keydown", (e) => { if (e.key === "Enter") keep(); });
+      mount(noteCell, input, h("button", { class: "small", "data-save-note": t.txid, onclick: keep }, tr("Save")));
+      input.focus();
+    };
+    showNote();
     return h("tr", { class: t.kind },
       h("td", { class: "nowrap" }, when, h("div", { class: "small dim" }, t.height === null ? "" : tr("{n} conf.", { n: t.confirmations }))),
-      h("td", {}, what, h("div", { class: "small dim mono" }, shortId(t.txid))),
+      h("td", {}, what, h("div", { class: "small dim mono" }, shortId(t.txid)), noteCell),
       h("td", { class: "num" }, t.kind === "self" ? h("span", { class: "dim" }, tr("fee {amount}", { amount: formatBtc(t.fee) })) : h("span", { class: t.net >= 0 ? "good" : "" }, `${t.net >= 0 ? "+" : ""}${formatBtc(t.net)}`)));
   }
 
@@ -393,27 +417,55 @@ export class App {
 
   receiveView() {
     if (!this.scan) return h("div", {}, this.status(), h("p", { class: "dim" }, tr("Addresses show once the scan has checked which are used.")));
-    this.receiveIndex ??= this.scan.next[0];
-    if (this.receiveIndex < this.scan.next[0]) this.receiveIndex = this.scan.next[0];
     const first = this.scan.next[0];
+    const labels = labelsOf(this.record);
+    const handed = (i) => labels.addr.has(addressAt(this.account, 0, i).address);
+    // The address offered first: the first unused one not handed out. Which
+    // addresses are derived, and how far the scan looks, stay as they were.
+    let fresh = first;
+    while (handed(fresh) && fresh < first + 1000) fresh++;
+    if (this.receiveIndex === undefined || this.receiveIndex < first) this.receiveIndex = fresh;
     const a = addressAt(this.account, 0, this.receiveIndex);
     const canvas = h("canvas", { class: "code", id: "receive-qr" });
     drawQr(canvas, makeQr(a.address, "Byte"), 6);
+    const isHanded = labels.addr.has(a.address);
+    const to = h("input", { id: "handed-to", type: "text", maxlength: String(MAX_LABEL), value: labels.addr.get(a.address) ?? "", oninput: (e) => {
+      const l = labelsOf(this.record);
+      l.addr.set(a.address, clean(e.target.value));
+      saveLabels(this.record, l);
+      this.persist();
+    } });
+    // Handed out but not paid: past the gap limit, a payment wouldn't show
+    let waiting = 0;
+    for (let i = first; i < first + this.record.gapLimit + RECEIVE_LIST + 1000 && waiting <= this.record.gapLimit; i++) if (handed(i)) waiting++;
     return h("div", { class: "panel" }, this.status(),
       h("h2", {}, tr("Receive")),
       h("div", { class: "qr" }, canvas),
       h("p", { class: "mono", id: "receive-address" }, a.address),
       h("p", { class: "small dim mono" }, a.path),
-      h("div", { class: "row" }, h("button", { class: "small", onclick: () => copyText(a.address) }, tr("Copy"))),
+      h("div", { class: "row" }, h("button", { class: "small", onclick: () => copyText(a.address) }, tr("Copy")),
+        h("label", { class: "check" }, h("input", { id: "handed-out", type: "checkbox", checked: isHanded, onchange: (e) => {
+          const l = labelsOf(this.record);
+          if (e.target.checked) l.addr.set(a.address, "");
+          else l.addr.delete(a.address);
+          saveLabels(this.record, l);
+          this.persist();
+          this.render();
+          if (e.target.checked) document.getElementById("handed-to")?.focus();
+        } }), tr("Handed out"))),
+      isHanded ? h("div", { class: "row handed" }, h("label", { for: "handed-to" }, tr("To:")), to) : null,
+      waiting >= this.record.gapLimit ? notice("warn", tr("{n} addresses handed out haven't been paid yet. A payment past the gap limit ({gap}) wouldn't show: raise the gap limit in Settings.", { n: waiting, gap: this.record.gapLimit })) : null,
       h("h3", {}, tr("Next addresses")),
       ...Array.from({ length: RECEIVE_LIST }, (_, i) => {
         const e = addressAt(this.account, 0, first + i);
+        const label = labels.addr.get(e.address);
         return h("div", { class: "row" }, h("button", { class: "small", "aria-pressed": String(e.index === this.receiveIndex), onclick: () => {
           this.receiveIndex = e.index;
           this.render();
-        } }, `#${e.index}`), h("span", { class: "mono" }, e.address));
+        } }, `#${e.index}`), h("span", { class: "mono" }, e.address),
+        label === undefined ? null : h("span", { class: "small dim handed-note" }, label ? tr("handed out, to {to}", { to: label }) : tr("handed out")));
       }),
-      h("p", { class: "small dim" }, tr("The wallet doesn't record which addresses you've given out. If you hand out more than the gap limit ({gap}) with none paid, a later payment can fall past the scan: raise the gap limit in Settings to see it.", { gap: this.record.gapLimit })));
+      h("p", { class: "small dim" }, tr("Mark an address handed out when you give it to someone: the next one is offered after it. If you hand out more than the gap limit ({gap}) with none paid, a later payment can fall past the scan: raise the gap limit in Settings to see it.", { gap: this.record.gapLimit })));
   }
 
   // ---- Send ----
@@ -812,7 +864,50 @@ export class App {
       h("div", { class: "panel" }, h("h2", {}, tr("Server")),
         h("p", {}, tr("Now:"), " ", h("span", { class: "mono", id: "current-server" }, this.state.servers[r.network])),
         this.serverChooser()),
+      this.labelsPanel(),
       this.pricePanel());
+  }
+
+  // BIP-329: the "To:" of handed-out addresses, and transaction notes
+  labelsPanel() {
+    const { addr, tx } = labelsOf(this.record);
+    const message = h("div", { id: "labels-result" });
+    const file = h("input", { id: "import-labels", type: "file", accept: ".jsonl,.json,.txt", onchange: async () => {
+      const chosen = file.files[0];
+      if (!chosen) return;
+      file.value = "";
+      if (chosen.size > MAX_LABEL_FILE) {
+        mount(message, notice("bad", tr("The file is too big to be labels.")));
+        return;
+      }
+      const text = await chosen.text();
+      const s = this.scan;
+      const reach = Math.max(s?.next[0] ?? 0, s?.next[1] ?? 0) + this.record.gapLimit + 100;
+      let done;
+      try {
+        done = importLabels(text, this.account, this.record, { own: ownAddresses(this.account, reach), txids: new Set((s?.history ?? []).map((t) => t.txid)) });
+      } catch (e) {
+        if (!(e instanceof LabelError)) throw e;
+        mount(message, notice("bad", e.message));
+        return;
+      }
+      this.persist();
+      this.render();
+      mount(document.getElementById("labels-result"),
+        notice(done.addr + done.tx ? "good" : "warn", tr("Imported {addr} address labels and {tx} transaction notes.", done)),
+        done.orphans.length ? notice("warn",
+          h("p", {}, tr("{n} records aren't this account's, or weren't found in its addresses and history, and were left out:", { n: done.orphans.length })),
+          h("ul", { id: "orphans" }, ...done.orphansShown.map((o) => h("li", { class: "mono small" }, `${o.type} ${o.ref}${o.label ? ` — ${o.label}` : ""}`)))) : null,
+        done.bad ? notice("warn", tr("{n} lines couldn't be read, and were left out.", { n: done.bad })) : null,
+        done.skipped ? h("p", { class: "small dim" }, tr("{n} records of other kinds (keys, inputs, outputs) aren't kept here.", { n: done.skipped })) : null);
+    } });
+    return h("div", { class: "panel" }, h("h2", {}, tr("Labels")),
+      h("p", {}, tr("Who each handed-out address went to, and your notes on transactions, as BIP-329 labels: Sparrow, Electrum and others read them.")),
+      h("p", { class: "small dim", id: "labels-count" }, tr("{addr} addresses handed out, {tx} transaction notes.", { addr: addr.size, tx: tx.size })),
+      h("div", { class: "row" }, h("button", { id: "export-labels", disabled: addr.size + tx.size === 0, onclick: () => {
+        download(new TextEncoder().encode(exportLabels(this.account, this.record)), `${this.record.label.replace(/[^\w.-]+/g, "_")}-labels.jsonl`);
+      } }, tr("Export labels"))),
+      h("label", { for: "import-labels" }, tr("Import labels")), file, message);
   }
 
   pricePanel() {

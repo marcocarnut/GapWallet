@@ -802,3 +802,92 @@ test("W5: mainnet coins are offered their price, which is asked for with nothing
   await ctx.close();
   quoteServer.close();
 });
+
+test("W6: handed out and to whom, notes on transactions, BIP-329 out and back; a hostile file stays text; the scan is the same", { skip }, async () => {
+  chain = new Chain("signet");
+  const a0 = addressAt(account(), 0, 0).address;
+  const { txid } = chain.fund(a0, 500000);
+  const { page, ctx, seen } = await open();
+  const dir = mkdtempSync(join(tmpdir(), "gapwallet-"));
+  try {
+    await importAccount(page);
+    await chooseServer(page);
+    await page.waitForSelector("#balance");
+    const asked = () => chain.requests.filter((r) => r.includes("/address/")).map((r) => r.replace(/^\w+ /, "")).sort();
+    const before = asked();
+    chain.requests.length = 0;
+
+    // handed out: the next address is offered after it, and the scan doesn't change
+    await click(page, "#tab-receive");
+    await page.waitForSelector("#receive-address");
+    assert.equal(await text(page, "#receive-address"), addressAt(account(), 0, 1).address);
+    await click(page, "#handed-out");
+    await page.waitForSelector("#handed-to");
+    await page.type("#handed-to", "Alice <b>bold</b>");
+    await click(page, "#tab-overview");
+    await click(page, "#tab-receive");
+    await page.waitForSelector("#receive-address");
+    assert.equal(await text(page, "#receive-address"), addressAt(account(), 0, 2).address);
+    await hasText(page, "handed out, to Alice <b>bold</b>");
+    assert.equal(await page.$("b"), null);
+    await click(page, "#refresh");
+    await page.waitForFunction(() => !document.getElementById("refresh").disabled);
+    assert.deepEqual(asked(), before);
+
+    // a note on the transaction, kept across a reload
+    await click(page, "#tab-overview");
+    await page.waitForSelector(`[data-note="${txid}"]`);
+    await click(page, `[data-note="${txid}"]`);
+    await page.type(".note-input", "From the faucet");
+    await click(page, `[data-save-note="${txid}"]`);
+    await page.reload();
+    await page.waitForSelector("#balance");
+    await hasText(page, "From the faucet");
+
+    // out, as BIP-329
+    await click(page, "#tab-settings");
+    await hasText(page, "1 addresses handed out, 1 transaction notes.");
+    const cdp = await browser.target().createCDPSession();
+    await cdp.send("Browser.setDownloadBehavior", { behavior: "allow", downloadPath: dir, browserContextId: ctx.id, eventsEnabled: true });
+    await click(page, "#export-labels");
+    let names = [];
+    for (let i = 0; i < 50 && !names.some((n) => n.endsWith(".jsonl")); i++) {
+      await new Promise((d) => setTimeout(d, 100));
+      names = readdirSync(dir);
+    }
+    const saved = names.find((n) => n.endsWith(".jsonl"));
+    assert.ok(saved, `saved: ${names}`);
+    const records = readFileSync(join(dir, saved), "utf8").trim().split("\n").map((l) => JSON.parse(l));
+    const origin = `wpkh([${MASTER_FINGERPRINT}/84h/1h/0h])`;
+    assert.deepEqual(records, [
+      { type: "addr", ref: addressAt(account(), 0, 1).address, label: "Alice <b>bold</b>", origin },
+      { type: "tx", ref: txid, label: "From the faucet", origin },
+    ]);
+
+    // and back in, with hostile and foreign records
+    const hostile = join(dir, "hostile.jsonl");
+    writeFileSync(hostile, [
+      JSON.stringify({ type: "tx", ref: txid, label: "<img src=x onerror=window.__pwned=1>" }),
+      JSON.stringify({ type: "addr", ref: addressAt(account(), 0, 3).address, label: "Bob" }),
+      JSON.stringify({ type: "addr", ref: PAYEE, label: "<script>window.__pwned=2</script>" }),
+      JSON.stringify({ type: "addr", ref: "__proto__", label: "x" }),
+      "not json",
+    ].join("\n"));
+    const input = await page.$("#import-labels");
+    await input.uploadFile(hostile);
+    await hasText(page, "Imported 1 address labels and 1 transaction notes.");
+    await page.waitForSelector("#orphans");
+    assert.match(await text(page, "#orphans"), /<script>window.__pwned=2<\/script>/);
+    await hasText(page, "2 lines couldn't be read");
+    await click(page, "#tab-overview");
+    await hasText(page, "<img src=x onerror=window.__pwned=1>");
+    assert.equal(await page.evaluate(() => window.__pwned), undefined);
+    assert.equal(await page.$("img, script:not([src]):not(:first-of-type)"), null);
+    await click(page, "#tab-receive");
+    await hasText(page, "handed out, to Bob");
+    assert.deepEqual(seen.errors, []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    await ctx.close();
+  }
+});

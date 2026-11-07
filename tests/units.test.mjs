@@ -34,7 +34,9 @@ test("the store survives nonsense", () => {
 test("W5: prices read from the common answers, and worth computed in cents", async () => {
   const { parsePrice, parsePriceUrl, valueInCents, PriceError, PRICE_DEFAULTS, fetchPrice } = await import("../src/price.js");
   assert.equal(parsePrice('{"data":{"amount":"64123.45","base":"BTC","currency":"USD"}}', "USD"), 64123.45);
-  assert.throws(() => parsePrice('{"data":{"amount":"64123.45","base":"BTC","currency":"EUR"}}', "USD"), PriceError);
+  assert.throws(() => parsePrice('{"data":{"amount":"64123.45","base":"BTC","currency":"EUR"}}', "USD"), /in EUR, not USD/);
+  assert.throws(() => parsePrice('{"data":{"amount":"350000"}}', "BRL"), /in \?, not BRL/); // a Coinbase-like answer that doesn't say
+  assert.throws(() => parsePrice('{"BRL":350000}', "USD"), PriceError); // mempool.space's shape names it by key
   assert.equal(parsePrice('{"bitcoin":{"brl":350000.5}}', "BRL"), 350000.5);
   assert.equal(parsePrice('{"USD":64000,"EUR":59000}', "USD"), 64000);
   assert.equal(parsePrice("64000.5\n", "USD"), 64000.5);

@@ -97,3 +97,10 @@ ol.steps li[aria-current="step"] { color: var(--ink); font-weight: 600; }
 /* What the balance is worth (W5): test coins are said to be worth nothing, loudly */
 .no-value { color: var(--bad); font-weight: 700; font-size: 18px; letter-spacing: 0.02em; margin-top: 4px; }
 .fiat { margin-top: 2px; }
+
+/* Notes and handed-out addresses (W6) */
+.note { font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.note-input { width: 100%; max-width: 360px; }
+button.link { border: none; background: none; padding: 0; color: var(--dim); text-decoration: underline; cursor: pointer; font-size: 13px; }
+.handed input[type=text] { flex: 1; }
+.handed-note { overflow-wrap: anywhere; }
