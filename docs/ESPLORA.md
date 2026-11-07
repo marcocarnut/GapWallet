@@ -267,12 +267,38 @@ Written here for the settings page, which says the same.
   or a VPN or Tor, is what limits this.
 - The server never sees the public key itself, only addresses, so it can't
   derive addresses it wasn't asked about.
-- Stored in this browser (`localStorage`): settings, and each account's
-  descriptor or zpub. Anyone with those sees the whole wallet, though they
+- Stored in this browser (`localStorage`): settings, each account's
+  descriptor or zpub, and its labels (who each handed-out address went to,
+  and your notes on transactions), which no server is sent. Anyone with those sees the whole wallet, though they
   can't spend. "Forget this account" removes them. Balances and history are
   not stored; they are fetched again.
 - Private keys are refused, not held: an xprv, zprv or similar pasted by
   mistake gets an error, and nothing is stored or sent.
+
+## Your own records
+
+On the Receive tab an address can be marked **handed out**, with a "To:" line
+for who it went to. The address offered next is the first unused one not
+handed out; which addresses are derived, and how far a scan looks, don't
+change. With as many handed out and unpaid as the gap limit, the page warns
+that a payment past it wouldn't show.
+
+In the history each transaction can have a **note**.
+
+Settings export both as BIP-329 labels, one JSON object a line, each with the
+account's origin, as in `wpkh([73c5da0a/84h/0h/0h])`. An address with a record is
+handed out, and its label is the "To:" text. Import reads the same, and treats
+the file as untrusted (`src/labels.js`):
+
+- each line is parsed on its own; one that isn't a record is counted and left out;
+- refs must look like an address (letters and digits only) or a txid, so no
+  record can name `__proto__` or the like;
+- labels are cut to 255 characters, control characters become spaces, and they
+  are only ever shown as text;
+- a record with another account's origin, an address not among this account's
+  first addresses (up to the scan's reach plus 100), or a transaction not in its
+  history is not applied: the page lists them, as text;
+- other kinds (`pubkey`, `xpub`, `input`, `output`) are counted and not kept.
 
 ## What the balance is worth
 

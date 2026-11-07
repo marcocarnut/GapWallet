@@ -162,7 +162,6 @@ export const PT_BR = {
   "Addresses show once the scan has checked which are used.": "Os endereços aparecem depois que a verificação descobrir quais já foram usados.",
   "Copy": "Copiar",
   "Next addresses": "Próximos endereços",
-  "The wallet doesn't record which addresses you've given out. If you hand out more than the gap limit ({gap}) with none paid, a later payment can fall past the scan: raise the gap limit in Settings to see it.": "A carteira não registra quais endereços você já passou adiante. Se você passar mais endereços do que o limite de intervalo ({gap}) sem que nenhum seja pago, um pagamento posterior pode ficar além da verificação: aumente o limite de intervalo nas Configurações para vê-lo.",
 
   // ui.js: send
   "Sending needs a finished scan.": "Para enviar, a verificação precisa terminar.",
@@ -291,4 +290,26 @@ export const PT_BR = {
   "Currency": "Moeda",
   "Price server": "Servidor de cotação",
   "= {rate} sat/vB": "= {rate} sat/vB",
+
+  // labels.js, notes and handed-out addresses (W6)
+  "The file is too big to be labels.": "O arquivo é grande demais para ser de rótulos.",
+  "The price server answered in {got}, not {currency}.": "O servidor de cotação respondeu em {got}, não em {currency}.",
+  "Edit note": "Editar nota",
+  "Add a note": "Adicionar nota",
+  "Note": "Nota",
+  "Handed out": "Passado adiante",
+  "To:": "Para:",
+  "{n} addresses handed out haven't been paid yet. A payment past the gap limit ({gap}) wouldn't show: raise the gap limit in Settings.": "{n} endereços passados adiante ainda não foram pagos. Um pagamento além do limite de intervalo ({gap}) não apareceria: aumente o limite de intervalo nas Configurações.",
+  "handed out, to {to}": "passado adiante, para {to}",
+  "handed out": "passado adiante",
+  "Mark an address handed out when you give it to someone: the next one is offered after it. If you hand out more than the gap limit ({gap}) with none paid, a later payment can fall past the scan: raise the gap limit in Settings to see it.": "Marque um endereço como passado adiante quando o der a alguém: o próximo passa a ser oferecido. Se você passar mais endereços do que o limite de intervalo ({gap}) sem que nenhum seja pago, um pagamento posterior pode ficar além da verificação: aumente o limite de intervalo nas Configurações para vê-lo.",
+  "Imported {addr} address labels and {tx} transaction notes.": "Importados {addr} rótulos de endereço e {tx} notas de transação.",
+  "{n} records aren't this account's, or weren't found in its addresses and history, and were left out:": "{n} registros não são desta conta, ou não foram encontrados nos endereços e no histórico dela, e ficaram de fora:",
+  "{n} lines couldn't be read, and were left out.": "{n} linhas não puderam ser lidas e ficaram de fora.",
+  "{n} records of other kinds (keys, inputs, outputs) aren't kept here.": "{n} registros de outros tipos (chaves, entradas, saídas) não são guardados aqui.",
+  "Labels": "Rótulos",
+  "Who each handed-out address went to, and your notes on transactions, as BIP-329 labels: Sparrow, Electrum and others read them.": "Para quem foi cada endereço passado adiante, e as suas notas nas transações, como rótulos BIP-329: o Sparrow, o Electrum e outros os leem.",
+  "{addr} addresses handed out, {tx} transaction notes.": "{addr} endereços passados adiante, {tx} notas de transação.",
+  "Export labels": "Exportar rótulos",
+  "Import labels": "Importar rótulos",
 };
