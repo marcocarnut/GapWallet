@@ -46,9 +46,12 @@ export function saveLabels(record, { addr, tx }) {
   record.labels = { addr: Object.fromEntries(addr), tx: Object.fromEntries(tx) };
 }
 
-// Text kept as typed, less control characters, cut to the limit
+// Text kept as typed, cut to the limit, less what could change how text
+// around it reads: control characters, and the bidi and line controls that
+// would reorder an amount or address beside a label.
+const CONTROLS = /[\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u2028-\u202e\u2066-\u2069]/g;
 export function clean(s) {
-  return [...String(s).replace(/[\u0000-\u001f\u007f]/g, " ")].slice(0, MAX_LABEL).join("");
+  return [...String(s).replace(CONTROLS, " ")].slice(0, MAX_LABEL).join("");
 }
 
 // BIP-329's origin: the account's descriptor without the key, wpkh([fp/84h/0h/0h])

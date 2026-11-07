@@ -23,7 +23,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-jYhcW4otMvLiq04d115QAM6ya0UYM2lfEqnnywjG7Sk='; style-src 'sha256-1imCSK8rmk5C8poqTEyMMfJ7hOMFvv0B0P1LSjLrCJo='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-woieZRWH9mIZeQip4PRzw8fdpLV/616Tmgee1cEwcJc='; style-src 'sha256-1imCSK8rmk5C8poqTEyMMfJ7hOMFvv0B0P1LSjLrCJo='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GapWallet</title>
@@ -19785,9 +19785,12 @@ function saveLabels(record, { addr, tx }) {
   record.labels = { addr: Object.fromEntries(addr), tx: Object.fromEntries(tx) };
 }
 
-// Text kept as typed, less control characters, cut to the limit
+// Text kept as typed, cut to the limit, less what could change how text
+// around it reads: control characters, and the bidi and line controls that
+// would reorder an amount or address beside a label.
+const CONTROLS = /[\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u2028-\u202e\u2066-\u2069]/g;
 function clean(s) {
-  return [...String(s).replace(/[\u0000-\u001f\u007f]/g, " ")].slice(0, MAX_LABEL).join("");
+  return [...String(s).replace(CONTROLS, " ")].slice(0, MAX_LABEL).join("");
 }
 
 // BIP-329's origin: the account's descriptor without the key, wpkh([fp/84h/0h/0h])

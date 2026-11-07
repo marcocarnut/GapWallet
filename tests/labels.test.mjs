@@ -73,6 +73,21 @@ test("an untrusted file: hostile labels stay text, odd refs are refused, others'
   assert.throws(() => importLabels("x".repeat((1 << 20) + 1), account, {}, { own, txids }), LabelError);
 });
 
+test("bidi and line controls can't reorder what's beside a label", async () => {
+  const { clean } = await import("../src/labels.js");
+  const controls = ["\u200e", "\u200f", "\u202a", "\u202b", "\u202c", "\u202d", "\u202e", "\u2066", "\u2067", "\u2068", "\u2069", "\u2028", "\u2029", "\u061c", "\u0085"];
+  for (const c of controls) assert.equal(clean(`To: Alice${c}0.5 BTC`), "To: Alice 0.5 BTC", `U+${c.codePointAt(0).toString(16)}`);
+  assert.equal(clean("Ação — 日本 ✓"), "Ação — 日本 ✓"); // letters and symbols are kept
+  // and through an import, and from storage
+  const { account, own, txids } = await setup().catch(() => ({}));
+  if (account) {
+    const record = {};
+    importLabels(JSON.stringify({ type: "tx", ref: TXID, label: "pay \u202egnp.exe" }), account, record, { own, txids });
+    assert.equal(record.labels.tx[TXID], "pay  gnp.exe");
+  }
+  assert.equal(labelsOf({ labels: { tx: { [TXID]: "a\u202eb" } } }).tx.get(TXID), "a b");
+});
+
 test("labels read from storage are checked the same way", () => {
   const got = labelsOf({ labels: { addr: { __proto__: "x", "tb1qok00000000000000": "fine", "bad ref!": "no" }, tx: { [TXID]: 5, [OTHER_TXID]: "ok" } } });
   assert.deepEqual([...got.addr], [["tb1qok00000000000000", "fine"]]);
