@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "node tools/build.mjs",
-    "test": "tools/vendor.py --check && node tools/build.mjs --check && node --experimental-default-type=module --test tests/core.test.mjs tests/units.test.mjs tests/qr.test.mjs tests/bbqr.test.mjs tests/fixtures.test.mjs tests/page.test.mjs"
+    "test": "tools/vendor.py --check && node tools/build.mjs --check && node --experimental-default-type=module --test tests/core.test.mjs tests/units.test.mjs tests/i18n.test.mjs tests/qr.test.mjs tests/bbqr.test.mjs tests/fixtures.test.mjs tests/page.test.mjs"
   },
   "devDependencies": {
     "puppeteer-core": "24.10.0"

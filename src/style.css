@@ -88,3 +88,8 @@ ol.steps li[aria-current="step"] { color: var(--ink); font-weight: 600; }
   td.who { white-space: normal; }
   #app { padding: 10px; }
 }
+
+/* "Scanning…" while a scan runs */
+.pulse { animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }

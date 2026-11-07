@@ -18,7 +18,7 @@ let puppeteer = null;
 try {
   puppeteer = (await import("puppeteer-core")).default;
 } catch { /* skipped */ }
-const skip = !CHROME || !puppeteer || !haveSigner ? "needs Chromium, puppeteer-core and the zerogap repository" : false;
+const skip = !CHROME || !puppeteer || !haveSigner ? "needs Chromium, puppeteer-core and the ZeroGap repository" : false;
 
 const HTML = readFileSync(new URL("../gapwallet.html", import.meta.url), "utf8");
 const cors = { "Access-Control-Allow-Origin": "*" };
@@ -686,5 +686,49 @@ test("a PSBT too big for one code goes out whole; a transaction other than the o
   await click(page, "#broadcast");
   await hasText(page, "missing inputs");
   assert.equal(chain.requests.filter((r) => r === "POST /tx").length, 1);
+  await ctx.close();
+});
+
+test("W4: pt-BR chosen in the header and kept; amounts read its way, the ambiguous refused; a seed cleared in it too", { skip }, async () => {
+  chain = new Chain("signet");
+  chain.fund(addressAt(account(), 0, 0).address, 500000);
+  const { page, ctx, seen } = await open();
+  await page.select("#language", "pt-BR");
+  await hasText(page, "Adicionar uma conta");
+  assert.equal(await page.evaluate(() => document.documentElement.lang), "pt-BR");
+  await click(page, "input[value=signet]");
+  await page.$eval("#key", (e) => {
+    e.value = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+    e.dispatchEvent(new Event("input"));
+  });
+  await hasText(page, "chave privada ou uma semente");
+  assert.equal(await page.$eval("#key", (e) => e.value), "");
+  await page.reload();
+  await importAccount(page);
+  await hasText(page, "Escolha um servidor"); // kept across the reload
+  await chooseServer(page);
+  await page.waitForSelector("#balance");
+  assert.equal(await text(page, "#balance"), "0,00500000 BTC");
+  await click(page, "#tab-send");
+  await page.waitForSelector("#address");
+  await page.type("#address", PAYEE);
+  await page.type("#amount", "1.000");
+  await hasText(page, "pode ser lido de duas formas");
+  await page.$eval("#amount", (e) => { e.value = ""; });
+  await page.type("#amount", "0,0001");
+  assert.equal(await text(page, "#amount-read"), "= 0,00010000 BTC");
+  await page.$eval("#rate", (e) => { e.value = ""; });
+  await page.type("#rate", "1,5");
+  await click(page, "#review");
+  await page.waitForSelector("#to-sign");
+  assert.equal(await text(page, "#review-amount"), "0,00010000 BTC");
+  assert.match(await text(page, "#review-fee"), /a 1,5 sat\/vB/);
+  assert.equal(await text(page, "#to-sign"), "Preparar para Assinatura");
+  await click(page, "#to-sign");
+  await hasText(page, "Assine Externamente");
+  await hasText(page, "aplicativos de assinatura externos");
+  await page.select("#language", "en"); // mid-send, the step stays
+  await hasText(page, "Sign it Externally");
+  assert.deepEqual(seen.errors, []);
   await ctx.close();
 });

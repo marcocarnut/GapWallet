@@ -11,6 +11,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { addressAt } from "./account.js";
+import { tr } from "./i18n.js";
 
 export const DEFAULT_GAP = 20;
 
@@ -85,13 +86,13 @@ export async function scanAccount(account, client, { gapLimit = DEFAULT_GAP, onP
   const addresses = new Map();
   const say = (text) => onProgress && onProgress(text);
   const tip = await client.tipHeight();
-  say("Asking about receive addresses…");
+  say(tr("Asking about receive addresses…"));
   const nextReceive = await scanChain(account, client, 0, gapLimit, addresses);
-  say("Asking about change addresses…");
+  say(tr("Asking about change addresses…"));
   const nextChange = await scanChain(account, client, 1, gapLimit, addresses);
 
   const used = [...addresses.values()].filter((e) => e.used);
-  say("Fetching coins and history…");
+  say(tr("Fetching coins and history…"));
   const utxoLists = await Promise.all(used.filter((e) => funds(e.stats) > 0).map(async (e) => {
     const list = await client.utxos(e.address);
     return list.map((u) => ({ txid: u.txid, vout: u.vout, value: u.value, confirmed: u.status.confirmed === true,

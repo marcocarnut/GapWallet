@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import qrcode from "../vendor/qrcode-generator/qrcode.mjs";
 import jsQR from "../vendor/jsqr/jsQR.cjs";
+import { tr } from "./i18n.js";
 
 // The largest QR code (version 40, error correction L) in alphanumeric mode
 export const MAX_ALPHANUMERIC = 4296;
@@ -64,7 +65,7 @@ export class Scanner {
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } }, audio: false });
     } catch (e) {
-      this.onError(`The camera can't be opened: ${e.message}`);
+      this.onError(tr("The camera can't be opened: {reason}", { reason: e.message }));
       return;
     }
     this.video.srcObject = this.stream;

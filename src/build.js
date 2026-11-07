@@ -14,6 +14,7 @@ import { concat, fromHex, fromHexReversed, toHex, equal, Writer, DecodeError } f
 import { addressToScript, classify } from "../vendor/zerogap/psbt/script.js";
 import { parseTx, serializeTx, txid as txidOf } from "../vendor/zerogap/psbt/tx.js";
 import { parsePsbt, serializePsbt, setEntry, GLOBAL, IN, OUT } from "../vendor/zerogap/psbt/psbt.js";
+import { tr } from "./i18n.js";
 
 export const SEQUENCE_RBF = 0xfffffffd;
 
@@ -49,7 +50,7 @@ export function paymentScript(address, account) {
   try {
     return addressToScript(address.trim(), net.lib);
   } catch (e) {
-    if (e instanceof DecodeError) throw new BuildError(`That isn't a ${net.name} address.`);
+    if (e instanceof DecodeError) throw new BuildError(tr("That isn't a {network} address.", { network: net.name }));
     throw e;
   }
 }
@@ -61,16 +62,16 @@ async function previousOf(coin, client) {
   try {
     tx = parseTx(raw);
   } catch {
-    throw new BuildError(`The server's copy of transaction ${coin.txid} can't be read.`);
+    throw new BuildError(tr("The server's copy of transaction {txid} can't be read.", { txid: coin.txid }));
   }
-  if (txidOf(tx) !== coin.txid) throw new BuildError(`The server gave the wrong transaction for ${coin.txid}. It can't be trusted: nothing was built.`);
+  if (txidOf(tx) !== coin.txid) throw new BuildError(tr("The server gave the wrong transaction for {txid}. It can't be trusted: nothing was built.", { txid: coin.txid }));
   const out = tx.outputs[coin.vout];
-  if (!out) throw new BuildError(`Transaction ${coin.txid} has no output ${coin.vout}, though the server says it does.`);
+  if (!out) throw new BuildError(tr("Transaction {txid} has no output {vout}, though the server says it does.", { txid: coin.txid, vout: coin.vout }));
   if (out.value !== coin.value) {
-    throw new BuildError(`The server said a coin holds ${coin.value} sat, but its transaction says ${out.value}. It can't be trusted: nothing was built.`);
+    throw new BuildError(tr("The server said a coin holds {said} sat, but its transaction says {has}. It can't be trusted: nothing was built.", { said: coin.value, has: out.value }));
   }
   if (!equal(out.script, coin.entry.script)) {
-    throw new BuildError("A coin the server listed doesn't pay this account's address. It can't be trusted: nothing was built.");
+    throw new BuildError(tr("A coin the server listed doesn't pay this account's address. It can't be trusted: nothing was built."));
   }
   return serializeTx(tx, { withWitness: false }); // the txid needs no witnesses, and they would only make the codes bigger
 }
@@ -81,16 +82,16 @@ async function previousOf(coin, client) {
 //           fee, vsize, amount, rate, dropped, skipped }
 export async function buildSpend(account, scan, request, client, { random = randomBelow } = {}) {
   if (!account.fingerprint) {
-    throw new BuildError("This account has no master fingerprint, so a signer couldn't find its keys. Add the fingerprint first.");
+    throw new BuildError(tr("This account has no master fingerprint, so a signer couldn't find its keys. Add the fingerprint first."));
   }
   const { rate, sendAll = false } = request;
-  if (!(rate >= MIN_RATE && rate <= MAX_RATE)) throw new BuildError(`A fee rate is between ${MIN_RATE} and ${MAX_RATE} sat/vB.`);
+  if (!(rate >= MIN_RATE && rate <= MAX_RATE)) throw new BuildError(tr("A fee rate is between {min} and {max} sat/vB.", { min: MIN_RATE, max: MAX_RATE }));
   const script = paymentScript(request.address, account);
   const type = classify(script).type;
   const dust = DUST[type];
-  if (dust === undefined) throw new BuildError("That kind of address isn't supported.");
-  if (!sendAll && !(Number.isSafeInteger(request.amount) && request.amount > 0)) throw new BuildError("Enter an amount.");
-  if (!sendAll && request.amount < dust) throw new BuildError(`That's below the dust limit for this address: ${dust} sat.`);
+  if (dust === undefined) throw new BuildError(tr("That kind of address isn't supported."));
+  if (!sendAll && !(Number.isSafeInteger(request.amount) && request.amount > 0)) throw new BuildError(tr("Enter an amount."));
+  if (!sendAll && request.amount < dust) throw new BuildError(tr("That's below the dust limit for this address: {dust} sat.", { dust }));
 
   let chosen;
   try {
@@ -100,7 +101,7 @@ export async function buildSpend(account, scan, request, client, { random = rand
     if (e instanceof SelectError) throw new BuildError(e.message);
     throw e;
   }
-  if (sendAll && chosen.amount < dust) throw new BuildError(`After the fee that's below the dust limit for this address: ${dust} sat.`);
+  if (sendAll && chosen.amount < dust) throw new BuildError(tr("After the fee that's below the dust limit for this address: {dust} sat.", { dust }));
 
   const change = chosen.change > 0 ? addressAt(account, 1, scan.next[1]) : null;
   const previous = await Promise.all(chosen.inputs.map((c) => previousOf(c, client)));
@@ -144,7 +145,7 @@ function witnessUtxo(coin) {
 const NO_KEY = new Uint8Array(0);
 
 export function psbtBytes(account, spend) {
-  if (!account.fingerprint) throw new BuildError("This account has no master fingerprint.");
+  if (!account.fingerprint) throw new BuildError(tr("This account has no master fingerprint."));
   const global = { entries: [] };
   setEntry(global, GLOBAL.UNSIGNED_TX, NO_KEY, serializeTx(spend.tx, { withWitness: false }));
   const inputs = spend.inputs.map((c) => {
