@@ -23,7 +23,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-woieZRWH9mIZeQip4PRzw8fdpLV/616Tmgee1cEwcJc='; style-src 'sha256-1imCSK8rmk5C8poqTEyMMfJ7hOMFvv0B0P1LSjLrCJo='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qDI6A9dWHq7b8Qf2i5JLCXeMeYx38HgXkbbza5vJtwA='; style-src 'sha256-1imCSK8rmk5C8poqTEyMMfJ7hOMFvv0B0P1LSjLrCJo='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GapWallet</title>
@@ -3820,13 +3820,13 @@ const PT_BR = {
   "Transaction {txid} has no output {vout}, though the server says it does.": "A transação {txid} não tem a saída {vout}, embora o servidor diga que tem.",
   "The server said a coin holds {said} sat, but its transaction says {has}. It can't be trusted: nothing was built.": "O servidor disse que uma moeda tem {said} sat, mas a transação dela diz {has}. Ele não é confiável: nada foi montado.",
   "A coin the server listed doesn't pay this account's address. It can't be trusted: nothing was built.": "Uma moeda listada pelo servidor não paga um endereço desta conta. Ele não é confiável: nada foi montado.",
-  "This account has no master fingerprint, so a signer couldn't find its keys. Add the fingerprint first.": "Esta conta não tem impressão digital mestra, então um assinador não encontraria as chaves dela. Adicione a impressão digital primeiro.",
+  "This account has no master fingerprint, so a signer couldn't find its keys. Add the fingerprint first.": "Esta conta não tem identificador-mestre, então um assinador não encontraria as chaves dela. Adicione o identificador-mestre primeiro.",
   "A fee rate is between {min} and {max} sat/vB.": "Uma taxa fica entre {min} e {max} sat/vB.",
   "That kind of address isn't supported.": "Esse tipo de endereço não é suportado.",
   "Enter an amount.": "Digite um valor.",
   "That's below the dust limit for this address: {dust} sat.": "Isso está abaixo do limite de poeira (dust) para este endereço: {dust} sat.",
   "After the fee that's below the dust limit for this address: {dust} sat.": "Depois da taxa, isso fica abaixo do limite de poeira (dust) para este endereço: {dust} sat.",
-  "This account has no master fingerprint.": "Esta conta não tem impressão digital mestra.",
+  "This account has no master fingerprint.": "Esta conta não tem identificador-mestre.",
 
   // coinselect.js
   "Choose at least one coin.": "Escolha pelo menos uma moeda.",
@@ -3842,22 +3842,22 @@ const PT_BR = {
   // descriptor.js
   "The descriptor holds a character descriptors can't have.": "O descritor contém um caractere que descritores não podem ter.",
   "That public key can't be read: {reason}.": "Essa chave pública não pode ser lida: {reason}.",
-  "This key is at depth {depth}, not an account's (depth 3). A master xpub can't stand in: account paths are hardened, so a watch-only wallet can't derive them from it.": "Esta chave está na profundidade {depth}, não na de uma conta (profundidade 3). Uma xpub mestra não serve: os caminhos de conta são endurecidos (hardened), então uma carteira somente de observação não consegue derivá-los dela.",
+  "This key is at depth {depth}, not an account's (depth 3). A master xpub can't stand in: account paths are hardened, so a watch-only wallet can't derive them from it.": "Esta chave está na profundidade {depth}, não na de uma conta (profundidade 3). Uma xpub mestra não serve: os caminhos de conta são endurecidos (hardened), então uma carteira somente leitura não consegue derivá-los dela.",
   "This key's account number isn't hardened, so it isn't an account key.": "O número de conta desta chave não é endurecido (hardened), então ela não é uma chave de conta.",
   "Choose a network.": "Escolha uma rede.",
   "This key is for mainnet, but you chose {network}.": "Esta chave é da mainnet, mas você escolheu {network}.",
   "This key is for a test network, but you chose {network}.": "Esta chave é de uma rede de teste, mas você escolheu {network}.",
-  "A master fingerprint is 8 hexadecimal digits, like 73c5da0a.": "Uma impressão digital mestra tem 8 dígitos hexadecimais, como 73c5da0a.",
+  "A master fingerprint is 8 hexadecimal digits, like 73c5da0a.": "Um identificador-mestre tem 8 dígitos hexadecimais, como 73c5da0a.",
   "A bare {prefix} doesn't say what kind of addresses it makes. Import the descriptor, or the zpub or ypub.": "Uma {prefix} sozinha não diz que tipo de endereço ela gera. Importe o descritor, ou a zpub ou ypub.",
   "This isn't a descriptor, a zpub or a ypub.": "Isto não é um descritor, uma zpub nem uma ypub.",
-  "The descriptor had no checksum, so a typing mistake in its fingerprint wouldn't show.": "O descritor não tinha checksum, então um erro de digitação na impressão digital não apareceria.",
+  "The descriptor had no checksum, so a typing mistake in its fingerprint wouldn't show.": "O descritor não tinha checksum, então um erro de digitação no identificador-mestre não apareceria.",
   "The descriptor's checksum is wrong: it was changed or mistyped.": "O checksum do descritor está errado: ele foi alterado ou digitado errado.",
   "Only wpkh(…) and sh(wpkh(…)) accounts are supported for now.": "Por enquanto, só contas wpkh(…) e sh(wpkh(…)) são suportadas.",
   "This descriptor covers one chain only. The wallet needs both: …/<0;1>/*.": "Este descritor cobre só uma cadeia. A carteira precisa das duas: …/<0;1>/*.",
   "This descriptor isn't of the form wpkh([fingerprint/84h/0h/0h]xpub…/<0;1>/*).": "Este descritor não tem a forma wpkh([fingerprint/84h/0h/0h]xpub…/<0;1>/*).",
   "A descriptor holds an xpub or tpub, not a {prefix}.": "Um descritor contém uma xpub ou tpub, não uma {prefix}.",
   "The descriptor's origin should be {origin}, for this key on {network}.": "A origem do descritor deveria ser {origin}, para esta chave na {network}.",
-  "The descriptor's fingerprint isn't the one you typed.": "A impressão digital do descritor não é a que você digitou.",
+  "The descriptor's fingerprint isn't the one you typed.": "O identificador-mestre do descritor não é o que você digitou.",
   "Paste a descriptor, a zpub or a ypub.": "Cole um descritor, uma zpub ou uma ypub.",
   "This is a private key or a seed. Nothing was kept. GapWallet only ever takes public keys.": "Isto é uma chave privada ou uma semente. Nada foi guardado. A GapWallet só aceita chaves públicas.",
 
@@ -3905,8 +3905,8 @@ const PT_BR = {
   "Account": "Conta",
   "Add an account…": "Adicionar uma conta…",
   "Language": "Idioma",
-  "watch-only": "somente observação",
-  "Scanning…": "Verificando…",
+  "watch-only": "somente leitura",
+  "Scanning…": "Coletando…",
   "Refresh": "Atualizar",
   "Overview": "Visão geral",
   "Receive": "Receber",
@@ -3916,9 +3916,9 @@ const PT_BR = {
   // ui.js: import
   "Account {n}": "Conta {n}",
   "Add this account": "Adicionar esta conta",
-  "Master fingerprint": "Impressão digital mestra",
-  "none yet": "nenhuma ainda",
-  "Without the master fingerprint this account is watch-only: you'll see its balance and history, but can't build transactions until you add it. The signer shows it with the public key.": "Sem a impressão digital mestra, esta conta é somente de observação: você vê o saldo e o histórico, mas não pode montar transações até adicioná-la. O assinador a mostra junto com a chave pública.",
+  "Master fingerprint": "Identificador-Mestre",
+  "none yet": "nenhum ainda",
+  "Without the master fingerprint this account is watch-only: you'll see its balance and history, but can't build transactions until you add it. The signer shows it with the public key.": "Sem o identificador-mestre, esta conta é somente leitura: você vê o saldo e o histórico, mas não pode montar transações até adicioná-lo. O assinador o mostra junto com a chave pública.",
   "Its first addresses": "Os primeiros endereços",
   "Compare these with the device that made the key, before you trust them.": "Compare-os com o dispositivo que gerou a chave antes de confiar neles.",
   "Read {have} of {total} codes…": "Lidos {have} de {total} códigos…",
@@ -3927,7 +3927,7 @@ const PT_BR = {
   "GapWallet only ever holds public keys. Nothing here is sent anywhere: the page contacts no server until you choose one.": "A GapWallet só guarda chaves públicas. Nada daqui é enviado a lugar nenhum: a página não contata nenhum servidor até você escolher um.",
   "Network": "Rede",
   "Descriptor, zpub or ypub": "Descritor, zpub ou ypub",
-  "Master fingerprint (a descriptor already has it)": "Impressão digital mestra (um descritor já a tem)",
+  "Master fingerprint (a descriptor already has it)": "Identificador-Mestre (um descritor já o tem)",
   "Name": "Nome",
   "Cancel": "Cancelar",
 
@@ -3941,9 +3941,9 @@ const PT_BR = {
   "The server is slowing us down: waiting {seconds} s…": "O servidor está nos segurando: aguardando {seconds} s…",
 
   // ui.js: fingerprint
-  "Watch-only: no master fingerprint.": "Somente observação: sem impressão digital mestra.",
-  "You can see this account, but a signer couldn't find its keys in a transaction built here. The device that made the key shows the fingerprint with it.": "Você pode ver esta conta, mas um assinador não encontraria as chaves dela numa transação montada aqui. O dispositivo que gerou a chave mostra a impressão digital junto com ela.",
-  "Save fingerprint": "Salvar impressão digital",
+  "Watch-only: no master fingerprint.": "Somente leitura: sem identificador-mestre.",
+  "You can see this account, but a signer couldn't find its keys in a transaction built here. The device that made the key shows the fingerprint with it.": "Você pode ver esta conta, mas um assinador não encontraria as chaves dela numa transação montada aqui. O dispositivo que gerou a chave mostra o identificador-mestre junto com ela.",
+  "Save fingerprint": "Salvar identificador-mestre",
 
   // ui.js: overview
   "Balance": "Saldo",
@@ -3962,12 +3962,12 @@ const PT_BR = {
   "Moved within this account": "Movido dentro desta conta",
 
   // ui.js: receive
-  "Addresses show once the scan has checked which are used.": "Os endereços aparecem depois que a verificação descobrir quais já foram usados.",
+  "Addresses show once the scan has checked which are used.": "Os endereços aparecem depois que a coleta descobrir quais já foram usados.",
   "Copy": "Copiar",
   "Next addresses": "Próximos endereços",
 
   // ui.js: send
-  "Sending needs a finished scan.": "Para enviar, a verificação precisa terminar.",
+  "Sending needs a finished scan.": "Para enviar, a coleta precisa terminar.",
   "1 Details": "1 Detalhes",
   "2 Review": "2 Revisão",
   "3 Sign externally": "3 Assinar externamente",
@@ -4063,14 +4063,14 @@ const PT_BR = {
   "Yes, forget it": "Sim, esquecer",
   "Keep it": "Manter",
   "Forget this account": "Esquecer esta conta",
-  "Gap limit": "Limite de intervalo (gap limit)",
-  "The gap limit is a whole number from 1 to 1000.": "O limite de intervalo é um número inteiro de 1 a 1000.",
+  "Gap limit": "Lacuna-limite",
+  "The gap limit is a whole number from 1 to 1000.": "A lacuna-limite é um número inteiro de 1 a 1000.",
   "Save": "Salvar",
   "Public key": "Chave pública",
   "Anyone holding this can see the whole wallet, though they can't spend.": "Quem tiver isto vê a carteira inteira, embora não possa gastar.",
   "Path": "Caminho",
-  "Fingerprint": "Impressão digital",
-  "none": "nenhuma",
+  "Fingerprint": "Identificador-Mestre",
+  "none": "nenhum",
   "Descriptor": "Descritor",
   "Server": "Servidor",
   "Now:": "Agora:",
@@ -4102,10 +4102,10 @@ const PT_BR = {
   "Note": "Nota",
   "Handed out": "Passado adiante",
   "To:": "Para:",
-  "{n} addresses handed out haven't been paid yet. A payment past the gap limit ({gap}) wouldn't show: raise the gap limit in Settings.": "{n} endereços passados adiante ainda não foram pagos. Um pagamento além do limite de intervalo ({gap}) não apareceria: aumente o limite de intervalo nas Configurações.",
+  "{n} addresses handed out haven't been paid yet. A payment past the gap limit ({gap}) wouldn't show: raise the gap limit in Settings.": "{n} endereços passados adiante ainda não foram pagos. Um pagamento além da lacuna-limite ({gap}) não apareceria: aumente a lacuna-limite nas Configurações.",
   "handed out, to {to}": "passado adiante, para {to}",
   "handed out": "passado adiante",
-  "Mark an address handed out when you give it to someone: the next one is offered after it. If you hand out more than the gap limit ({gap}) with none paid, a later payment can fall past the scan: raise the gap limit in Settings to see it.": "Marque um endereço como passado adiante quando o der a alguém: o próximo passa a ser oferecido. Se você passar mais endereços do que o limite de intervalo ({gap}) sem que nenhum seja pago, um pagamento posterior pode ficar além da verificação: aumente o limite de intervalo nas Configurações para vê-lo.",
+  "Mark an address handed out when you give it to someone: the next one is offered after it. If you hand out more than the gap limit ({gap}) with none paid, a later payment can fall past the scan: raise the gap limit in Settings to see it.": "Marque um endereço como passado adiante quando o der a alguém: o próximo passa a ser oferecido. Se você passar mais endereços do que a lacuna-limite ({gap}) sem que nenhum seja pago, um pagamento posterior pode ficar além da coleta: aumente a lacuna-limite nas Configurações para vê-lo.",
   "Imported {addr} address labels and {tx} transaction notes.": "Importados {addr} rótulos de endereço e {tx} notas de transação.",
   "{n} records aren't this account's, or weren't found in its addresses and history, and were left out:": "{n} registros não são desta conta, ou não foram encontrados nos endereços e no histórico dela, e ficaram de fora:",
   "{n} lines couldn't be read, and were left out.": "{n} linhas não puderam ser lidas e ficaram de fora.",
