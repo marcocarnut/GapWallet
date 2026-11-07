@@ -12,8 +12,9 @@ import { BuildError, buildSpend, psbtBytes } from "./build.js";
 import { KeyReader, SignedReader, readFile } from "./signed.js";
 import { MAX_ALPHANUMERIC, Scanner, drawQr, makeQr } from "./qr.js";
 import { parseBtc, parseDecimal, formatBtc } from "./amount.js";
-import { LANGUAGES, formatDate, formatDecimal, language, plural, setLanguage, tr } from "./i18n.js";
+import { LANGUAGES, formatCents, formatDate, formatDecimal, language, plural, setLanguage, tr } from "./i18n.js";
 import { save } from "./store.js";
+import { CURRENCIES, PRICE_DEFAULTS, PriceError, fetchPrice, parsePriceUrl, valueInCents } from "./price.js";
 import { toBase64 } from "../vendor/zerogap/psbt/bytes.js";
 import { electrumQrText } from "../vendor/zerogap/psbt/transport.js";
 import { BBQrError, split } from "../vendor/zerogap/bbqr.js";
@@ -42,6 +43,13 @@ function privacyTable() {
   return h("table", {},
     h("thead", {}, h("tr", {}, h("th", {}, tr("Who")), h("th", {}, tr("What they learn")))),
     h("tbody", {}, ...PRIVACY.map(([who, what]) => h("tr", {}, h("td", { class: "who" }, tr(who)), h("td", {}, tr(what))))));
+}
+
+// The quote URL the page fetches for this network: none off mainnet, or with no currency chosen
+export function priceUrlFor(state, network) {
+  const p = state.price;
+  if (network !== "mainnet" || !p?.currency) return null;
+  return p.urls?.[p.currency] || PRICE_DEFAULTS[p.currency];
 }
 
 const notice = (kind, ...text) => h("div", { class: `notice ${kind}`, role: kind === "bad" ? "alert" : null }, ...text);
@@ -264,6 +272,7 @@ export class App {
     };
     try {
       await this.client.checkNetwork(this.record.network);
+      this.refreshPrice();
       this.scan = await scanAccount(this.account, this.client, { gapLimit: this.record.gapLimit, onProgress: (text) => {
         this.scanning.text = text;
         this.showProgress();
@@ -275,6 +284,40 @@ export class App {
       this.scanning = null;
       this.rerender();
     }
+  }
+
+  // The price, beside the scan: its failure is only a line under the balance.
+  async refreshPrice() {
+    const url = priceUrlFor(this.state, this.record.network);
+    if (!url) return;
+    const currency = this.state.price.currency;
+    try {
+      this.price = { currency, value: await fetchPrice(url, currency) };
+    } catch (e) {
+      if (!(e instanceof PriceError)) throw e;
+      this.price = { currency, error: e.message };
+    }
+    if (this.tab === "overview" && !this.scanning) this.rerender();
+  }
+
+  // What the balance is worth: test coins nothing, mainnet coins money.
+  valueLine(sats) {
+    if (this.record.network !== "mainnet") {
+      return h("div", { id: "no-value", class: "no-value" }, tr("TEST ONLY — NO MONETARY VALUE"));
+    }
+    const p = this.price;
+    if (!this.state.price?.currency) {
+      const currency = language() === "pt-BR" ? "BRL" : "USD";
+      return h("div", { id: "fiat-offer", class: "small" }, tr("These are real bitcoins, with real monetary value."), " ",
+        h("button", { id: "show-price", class: "small", onclick: () => {
+          this.state.price = { ...(this.state.price || {}), currency, urls: this.state.price?.urls || {} };
+          this.reload();
+        } }, tr("Show their value in {currency}", { currency })),
+        h("div", { class: "small dim" }, tr("The price comes from {host}, which learns your IP address and when you look. Change it in Settings.", { host: new URL(PRICE_DEFAULTS[currency]).host })));
+    }
+    if (!p) return h("div", { id: "fiat", class: "fiat dim" }, tr("Fetching the price…"));
+    if (p.error) return h("div", { id: "fiat", class: "fiat small" }, tr("Real bitcoins, but no price: {reason}", { reason: p.error }));
+    return h("div", { id: "fiat", class: "fiat" }, tr("About {amount} {currency}", { amount: formatCents(valueInCents(sats, p.value)), currency: p.currency }));
   }
 
   // Scans finish while the user may be typing or in the send steps: those keep their screen.
@@ -324,10 +367,11 @@ export class App {
   overviewView() {
     const s = this.scan;
     const body = [this.status(), this.account.fingerprint ? null : this.fingerprintPrompt()];
-    if (!s) return h("div", {}, ...body);
+    if (!s) return h("div", {}, ...body, this.record.network !== "mainnet" ? this.valueLine(0) : null);
     body.push(h("div", { class: "panel" },
       h("div", { class: "dim small" }, tr("Balance")),
       h("div", { class: "balance", id: "balance" }, btc(s.balance.confirmed)),
+      this.valueLine(s.balance.confirmed),
       s.balance.unconfirmed ? h("div", { id: "unconfirmed" }, tr("and {amount} unconfirmed", { amount: btc(s.balance.unconfirmed) })) : null));
     body.push(h("div", { class: "panel" }, h("h2", {}, tr("History")),
       s.history.length === 0 ? h("p", { class: "dim" }, tr("Nothing yet.")) : h("table", { id: "history" },
@@ -410,12 +454,15 @@ export class App {
       readBack();
     } });
     readBack();
+    const rateRead = h("div", { id: "rate-read", class: "small dim mono" });
     const rate = h("input", { id: "rate", type: "text", inputmode: "decimal", value: f.rate, oninput: (e) => {
       f.rate = e.target.value;
       paint();
     } });
     const choices = h("div", { class: "choices", id: "fee-choices" });
     const paint = () => {
+      const read = parseDecimal(f.rate);
+      mount(rateRead, f.rate.trim() === "" ? "" : Number.isFinite(read) ? tr("= {rate} sat/vB", { rate: read }) : tr("Enter a fee rate."));
       const est = this.send.estimates;
       mount(choices, ...(!est ? [h("span", { class: "dim small" }, tr("Fetching estimates…"))] : FEE_TARGETS.filter(([n]) => est[n] !== undefined).map(([n, name]) => h("button", {
         "aria-pressed": String(parseDecimal(f.rate) === est[n]), onclick: () => {
@@ -471,7 +518,7 @@ export class App {
         amount.disabled = f.sendAll;
         readBack();
       } }), tr("Send everything (no change)")),
-      h("label", { for: "rate" }, tr("Fee rate (sat/vB, {min} to {max})", { min: MIN_RATE, max: MAX_RATE })), choices, h("div", { class: "row" }, rate),
+      h("label", { for: "rate" }, tr("Fee rate (sat/vB, {min} to {max})", { min: MIN_RATE, max: MAX_RATE })), choices, h("div", { class: "row" }, rate), rateRead,
       h("details", { open: f.hand ? true : null, ontoggle: (e) => (f.hand = e.target.open) },
         h("summary", {}, tr("Choose coins by hand")),
         h("p", { class: "small dim" }, tr("Exactly the ticked coins are spent, confirmed or not. With none ticked, the wallet chooses among confirmed coins.")),
@@ -764,7 +811,43 @@ export class App {
         forget),
       h("div", { class: "panel" }, h("h2", {}, tr("Server")),
         h("p", {}, tr("Now:"), " ", h("span", { class: "mono", id: "current-server" }, this.state.servers[r.network])),
-        this.serverChooser()));
+        this.serverChooser()),
+      this.pricePanel());
+  }
+
+  pricePanel() {
+    const p = this.state.price || {};
+    const pick = h("select", { id: "price-currency" },
+      h("option", { value: "", selected: !p.currency }, tr("Don't show a price")),
+      ...CURRENCIES.map((c) => h("option", { value: c, selected: p.currency === c }, c)));
+    const url = h("input", { id: "price-url", type: "text", spellcheck: "false" });
+    const showUrl = () => {
+      url.value = pick.value ? p.urls?.[pick.value] || PRICE_DEFAULTS[pick.value] : "";
+      url.disabled = !pick.value;
+    };
+    pick.addEventListener("change", showUrl);
+    showUrl();
+    const message = h("div", {});
+    return h("div", { class: "panel" }, h("h2", {}, tr("Price")),
+      h("p", {}, tr("On mainnet accounts the balance shows what it's worth. Test networks show that their coins have no value, and fetch no price.")),
+      h("p", { class: "small dim" }, tr("The page asks the price server for the price and nothing else: no address, key or amount. The server learns your IP address and when you look, as the Esplora server does.")),
+      h("label", { for: "price-currency" }, tr("Currency")), pick,
+      h("label", { for: "price-url" }, tr("Price server")), url, message,
+      h("div", { class: "row" }, h("button", { id: "save-price", onclick: () => {
+        const urls = { ...(p.urls || {}) };
+        if (pick.value) {
+          try {
+            urls[pick.value] = parsePriceUrl(url.value);
+          } catch (e) {
+            if (!(e instanceof PriceError)) throw e;
+            mount(message, notice("bad", e.message));
+            return;
+          }
+          if (urls[pick.value] === PRICE_DEFAULTS[pick.value]) delete urls[pick.value];
+        }
+        this.state.price = { currency: pick.value || null, urls };
+        this.reload();
+      } }, tr("Save"))));
   }
 
   stopCamera() {

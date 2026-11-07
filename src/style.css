@@ -93,3 +93,7 @@ ol.steps li[aria-current="step"] { color: var(--ink); font-weight: 600; }
 .pulse { animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: 0.35; } }
 @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+
+/* What the balance is worth (W5): test coins are said to be worth nothing, loudly */
+.no-value { color: var(--bad); font-weight: 700; font-size: 18px; letter-spacing: 0.02em; margin-top: 4px; }
+.fiat { margin-top: 2px; }

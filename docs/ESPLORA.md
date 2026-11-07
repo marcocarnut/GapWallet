@@ -39,10 +39,11 @@ The page is one HTML file with a `<meta>` policy:
   - the static policy says `connect-src https: http:` (your own server may
     well be plain HTTP on the local network);
   - at start, before any request, the page adds a second `<meta>` naming only
-    the origin of the saved server;
-  - changing the server saves it and reloads the page.
+    the origin of the saved server, and, for a mainnet account with a price
+    chosen, the price server's origin;
+  - changing either server saves it and reloads the page.
 
-  With no server saved, the second policy is `connect-src 'none'`.
+  With no server saved and no price, the second policy is `connect-src 'none'`.
 
 ## Endpoints
 
@@ -260,6 +261,7 @@ Written here for the settings page, which says the same.
 | Network observers | With HTTPS, that the page talks to that server, not what it asks. |
 | The site serving the page | That the page was loaded. It is sent nothing else: no request goes to it. Better still, run the file from disk or your own server. |
 | The camera | Stays in the browser: frames are decoded in the page and never sent. |
+| The price server, if chosen | Mainnet accounts only. That someone at this IP looks at the price of bitcoin, and when: with each scan, the one URL set in Settings, fetched as it is. No address, key or amount goes there. |
 
 - mempool.space can link all of this to the IP address. Your own server,
   or a VPN or Tor, is what limits this.
@@ -271,6 +273,22 @@ Written here for the settings page, which says the same.
   not stored; they are fetched again.
 - Private keys are refused, not held: an xprv, zprv or similar pasted by
   mistake gets an error, and nothing is stored or sent.
+
+## What the balance is worth
+
+Off mainnet, a red "TEST ONLY — NO MONETARY VALUE" under the balance, and no
+price is fetched, whatever Settings say. People have been sold test coins at
+the price of real ones; the network badge alone is easy to miss.
+
+On mainnet, the balance says the coins are real and offers their value. It is
+shown only once asked for, since it means a request to another server: "About
+61,728.39 USD", from the confirmed balance and a price fetched with each scan.
+Settings choose USD or BRL, or none, and the price server for each. The default
+is Coinbase's public spot price, `https://api.coinbase.com/v2/prices/BTC-USD/spot`
+(and `BTC-BRL`), which needs no key and answers browsers. The page also reads a
+bare number, CoinGecko's `{ "bitcoin": { "usd": … } }` and mempool.space's
+`{ "USD": … }`, so any of those can be set instead. A failed price is a line under
+the balance, nothing more.
 
 ## Tests
 

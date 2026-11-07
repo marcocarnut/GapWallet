@@ -23,7 +23,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-UqzPorPB/6Y/BiWKzWaISKi9WyzFH6Oq3egXJ9TJlpg='; style-src 'sha256-Ya3e9ZBuDYv9w1lVTR6WVBKZvdVEeIAMLuWagfjOh2A='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-nRMmgzZyYFaNaemLS7GpGH0F6VSmeOeDrtJic8C/5Jk='; style-src 'sha256-hLvt17/AuOnRbGMJ42QdWOLuL4kqOr1Pqcsb9c8CarE='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GapWallet</title>
@@ -122,6 +122,10 @@ ol.steps li[aria-current="step"] { color: var(--ink); font-weight: 600; }
 .pulse { animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: 0.35; } }
 @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+
+/* What the balance is worth (W5): test coins are said to be worth nothing, loudly */
+.no-value { color: var(--bad); font-weight: 700; font-size: 18px; letter-spacing: 0.02em; margin-top: 4px; }
+.fiat { margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -4064,6 +4068,25 @@ const PT_BR = {
   "Descriptor": "Descritor",
   "Server": "Servidor",
   "Now:": "Agora:",
+
+  // price.js and the value of the balance (W5)
+  "TEST ONLY — NO MONETARY VALUE": "APENAS TESTE — SEM VALOR MONETÁRIO",
+  "These are real bitcoins, with real monetary value.": "Estes são bitcoins de verdade, com valor monetário real.",
+  "Show their value in {currency}": "Mostrar o valor em {currency}",
+  "The price comes from {host}, which learns your IP address and when you look. Change it in Settings.": "A cotação vem de {host}, que fica sabendo o seu endereço IP e quando você consulta. Mude isso nas Configurações.",
+  "Fetching the price…": "Buscando a cotação…",
+  "Real bitcoins, but no price: {reason}": "Bitcoins de verdade, mas sem cotação: {reason}",
+  "About {amount} {currency}": "Cerca de {amount} {currency}",
+  "The price server's answer has no price in {currency}.": "A resposta do servidor de cotação não tem preço em {currency}.",
+  "The price server can't be reached. ({reason})": "Não foi possível falar com o servidor de cotação. ({reason})",
+  "The price server answered {status}.": "O servidor de cotação respondeu {status}.",
+  "Price": "Cotação",
+  "Don't show a price": "Não mostrar cotação",
+  "On mainnet accounts the balance shows what it's worth. Test networks show that their coins have no value, and fetch no price.": "Nas contas da mainnet, o saldo mostra quanto vale. As redes de teste mostram que as moedas delas não têm valor, e não buscam cotação.",
+  "The page asks the price server for the price and nothing else: no address, key or amount. The server learns your IP address and when you look, as the Esplora server does.": "A página pede ao servidor de cotação só a cotação e nada mais: nenhum endereço, chave ou valor. O servidor fica sabendo o seu endereço IP e quando você consulta, como o servidor Esplora.",
+  "Currency": "Moeda",
+  "Price server": "Servidor de cotação",
+  "= {rate} sat/vB": "= {rate} sat/vB",
 };
 
 __exports["PT_BR"] = PT_BR;
@@ -4116,6 +4139,12 @@ function formatDecimal(x, places = 2) {
   return `${x < 0 ? "-" : ""}${formatInt(Number(whole))}${trimmed ? marks().decimal + trimmed : ""}`;
 }
 
+// Cents as the language writes money: 1,234.56 or 1.234,56
+function formatCents(cents) {
+  const n = Math.abs(Math.round(cents));
+  return `${cents < 0 ? "-" : ""}${formatInt(Math.floor(n / 100))}${marks().decimal}${String(n % 100).padStart(2, "0")}`;
+}
+
 const show = (v) => (typeof v === "number" ? (Number.isInteger(v) ? formatInt(v) : formatDecimal(v)) : String(v));
 
 function tr(text, params = {}) {
@@ -4131,7 +4160,7 @@ function formatDate(seconds) {
   return new Intl.DateTimeFormat(current, { dateStyle: "medium" }).format(new Date(seconds * 1000));
 }
 
-__exports["setLanguage"] = setLanguage; __exports["startLanguage"] = startLanguage; __exports["formatInt"] = formatInt; __exports["formatDecimal"] = formatDecimal; __exports["tr"] = tr; __exports["formatDate"] = formatDate; __exports["LANGUAGES"] = LANGUAGES; __exports["language"] = language; __exports["marks"] = marks; __exports["plural"] = plural;
+__exports["setLanguage"] = setLanguage; __exports["startLanguage"] = startLanguage; __exports["formatInt"] = formatInt; __exports["formatDecimal"] = formatDecimal; __exports["formatCents"] = formatCents; __exports["tr"] = tr; __exports["formatDate"] = formatDate; __exports["LANGUAGES"] = LANGUAGES; __exports["language"] = language; __exports["marks"] = marks; __exports["plural"] = plural;
 }
 
 // ======== src/esplora.js ========
@@ -19678,6 +19707,93 @@ function formatBtc(sats) {
 __exports["parseBtc"] = parseBtc; __exports["parseDecimal"] = parseDecimal; __exports["formatBtc"] = formatBtc; __exports["SATS"] = SATS;
 }
 
+// ======== src/price.js ========
+{ const __exports = {}; __modules.set("src/price.js", __exports);
+// The price of bitcoin, for "About 1,234.56 USD" under a mainnet balance
+// (BITCOIN.md, W5). Off mainnet nothing is fetched: test coins have no value,
+// and the page says so instead.
+//
+// The page asks the quote server for the quote and nothing else: the URL is
+// the one in Settings, fetched as it is, with nothing added to it. No address,
+// key or amount goes there. The server learns the IP that asks, and when.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+const { tr } = __mod("src/i18n.js");
+
+const CURRENCIES = ["USD", "BRL"];
+
+// Coinbase's public spot price: no key, answers browsers (CORS)
+const PRICE_DEFAULTS = {
+  USD: "https://api.coinbase.com/v2/prices/BTC-USD/spot",
+  BRL: "https://api.coinbase.com/v2/prices/BTC-BRL/spot",
+};
+
+const TIMEOUT_MS = 15000;
+
+class PriceError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "PriceError";
+  }
+}
+
+// A quote URL as typed, checked: http(s), no user name or password.
+function parsePriceUrl(text) {
+  let u;
+  try {
+    u = new URL(String(text).trim());
+  } catch {
+    throw new PriceError(tr("That isn't a web address."));
+  }
+  if (u.protocol !== "https:" && u.protocol !== "http:") throw new PriceError(tr("A server's address starts with https:// or http://."));
+  if (u.username || u.password) throw new PriceError(tr("A server's address can't hold a user name or password."));
+  return u.href;
+}
+
+// The price in the answer. Understands the answers of the common free quote
+// servers: a bare number; Coinbase's { data: { amount } }; CoinGecko's
+// { bitcoin: { brl } }; mempool.space's { USD }.
+function parsePrice(text, currency) {
+  const fail = () => { throw new PriceError(tr("The price server's answer has no price in {currency}.", { currency })); };
+  const number = (v) => {
+    const n = typeof v === "string" && /^\s*\d+(\.\d+)?\s*$/.test(v) ? Number(v) : v;
+    return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : null;
+  };
+  const bare = number(String(text));
+  if (bare) return bare;
+  let j;
+  try {
+    j = JSON.parse(text);
+  } catch {
+    return fail();
+  }
+  const found = [j?.data?.currency === undefined || j?.data?.currency === currency ? j?.data?.amount : undefined,
+    j?.bitcoin?.[currency.toLowerCase()], j?.[currency]].map(number).find(Boolean);
+  return found ?? fail();
+}
+
+async function fetchPrice(url, currency, { fetch: f = globalThis.fetch } = {}) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
+  let r;
+  try {
+    r = await f(url, { signal: ctl.signal, credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer" });
+  } catch (e) {
+    throw new PriceError(tr("The price server can't be reached. ({reason})", { reason: e.message }));
+  } finally {
+    clearTimeout(timer);
+  }
+  const text = await r.text();
+  if (!r.ok) throw new PriceError(tr("The price server answered {status}.", { status: String(r.status) }));
+  return parsePrice(text, currency);
+}
+
+// What `sats` are worth at `price` a bitcoin, in cents, rounded
+const valueInCents = (sats, price) => Math.round((sats * price) / 1e6);
+
+__exports["PriceError"] = PriceError; __exports["parsePriceUrl"] = parsePriceUrl; __exports["parsePrice"] = parsePrice; __exports["fetchPrice"] = fetchPrice; __exports["CURRENCIES"] = CURRENCIES; __exports["PRICE_DEFAULTS"] = PRICE_DEFAULTS; __exports["valueInCents"] = valueInCents;
+}
+
 // ======== src/ui.js ========
 { const __exports = {}; __modules.set("src/ui.js", __exports);
 // The page. All text reaches the DOM as text nodes, so nothing a server says
@@ -19694,8 +19810,9 @@ const { BuildError, buildSpend, psbtBytes } = __mod("src/build.js");
 const { KeyReader, SignedReader, readFile } = __mod("src/signed.js");
 const { MAX_ALPHANUMERIC, Scanner, drawQr, makeQr } = __mod("src/qr.js");
 const { parseBtc, parseDecimal, formatBtc } = __mod("src/amount.js");
-const { LANGUAGES, formatDate, formatDecimal, language, plural, setLanguage, tr } = __mod("src/i18n.js");
+const { LANGUAGES, formatCents, formatDate, formatDecimal, language, plural, setLanguage, tr } = __mod("src/i18n.js");
 const { save } = __mod("src/store.js");
+const { CURRENCIES, PRICE_DEFAULTS, PriceError, fetchPrice, parsePriceUrl, valueInCents } = __mod("src/price.js");
 const { toBase64 } = __mod("vendor/zerogap/psbt/bytes.js");
 const { electrumQrText } = __mod("vendor/zerogap/psbt/transport.js");
 const { BBQrError, split } = __mod("vendor/zerogap/bbqr.js");
@@ -19724,6 +19841,13 @@ function privacyTable() {
   return h("table", {},
     h("thead", {}, h("tr", {}, h("th", {}, tr("Who")), h("th", {}, tr("What they learn")))),
     h("tbody", {}, ...PRIVACY.map(([who, what]) => h("tr", {}, h("td", { class: "who" }, tr(who)), h("td", {}, tr(what))))));
+}
+
+// The quote URL the page fetches for this network: none off mainnet, or with no currency chosen
+function priceUrlFor(state, network) {
+  const p = state.price;
+  if (network !== "mainnet" || !p?.currency) return null;
+  return p.urls?.[p.currency] || PRICE_DEFAULTS[p.currency];
 }
 
 const notice = (kind, ...text) => h("div", { class: `notice ${kind}`, role: kind === "bad" ? "alert" : null }, ...text);
@@ -19946,6 +20070,7 @@ class App {
     };
     try {
       await this.client.checkNetwork(this.record.network);
+      this.refreshPrice();
       this.scan = await scanAccount(this.account, this.client, { gapLimit: this.record.gapLimit, onProgress: (text) => {
         this.scanning.text = text;
         this.showProgress();
@@ -19957,6 +20082,40 @@ class App {
       this.scanning = null;
       this.rerender();
     }
+  }
+
+  // The price, beside the scan: its failure is only a line under the balance.
+  async refreshPrice() {
+    const url = priceUrlFor(this.state, this.record.network);
+    if (!url) return;
+    const currency = this.state.price.currency;
+    try {
+      this.price = { currency, value: await fetchPrice(url, currency) };
+    } catch (e) {
+      if (!(e instanceof PriceError)) throw e;
+      this.price = { currency, error: e.message };
+    }
+    if (this.tab === "overview" && !this.scanning) this.rerender();
+  }
+
+  // What the balance is worth: test coins nothing, mainnet coins money.
+  valueLine(sats) {
+    if (this.record.network !== "mainnet") {
+      return h("div", { id: "no-value", class: "no-value" }, tr("TEST ONLY — NO MONETARY VALUE"));
+    }
+    const p = this.price;
+    if (!this.state.price?.currency) {
+      const currency = language() === "pt-BR" ? "BRL" : "USD";
+      return h("div", { id: "fiat-offer", class: "small" }, tr("These are real bitcoins, with real monetary value."), " ",
+        h("button", { id: "show-price", class: "small", onclick: () => {
+          this.state.price = { ...(this.state.price || {}), currency, urls: this.state.price?.urls || {} };
+          this.reload();
+        } }, tr("Show their value in {currency}", { currency })),
+        h("div", { class: "small dim" }, tr("The price comes from {host}, which learns your IP address and when you look. Change it in Settings.", { host: new URL(PRICE_DEFAULTS[currency]).host })));
+    }
+    if (!p) return h("div", { id: "fiat", class: "fiat dim" }, tr("Fetching the price…"));
+    if (p.error) return h("div", { id: "fiat", class: "fiat small" }, tr("Real bitcoins, but no price: {reason}", { reason: p.error }));
+    return h("div", { id: "fiat", class: "fiat" }, tr("About {amount} {currency}", { amount: formatCents(valueInCents(sats, p.value)), currency: p.currency }));
   }
 
   // Scans finish while the user may be typing or in the send steps: those keep their screen.
@@ -20006,10 +20165,11 @@ class App {
   overviewView() {
     const s = this.scan;
     const body = [this.status(), this.account.fingerprint ? null : this.fingerprintPrompt()];
-    if (!s) return h("div", {}, ...body);
+    if (!s) return h("div", {}, ...body, this.record.network !== "mainnet" ? this.valueLine(0) : null);
     body.push(h("div", { class: "panel" },
       h("div", { class: "dim small" }, tr("Balance")),
       h("div", { class: "balance", id: "balance" }, btc(s.balance.confirmed)),
+      this.valueLine(s.balance.confirmed),
       s.balance.unconfirmed ? h("div", { id: "unconfirmed" }, tr("and {amount} unconfirmed", { amount: btc(s.balance.unconfirmed) })) : null));
     body.push(h("div", { class: "panel" }, h("h2", {}, tr("History")),
       s.history.length === 0 ? h("p", { class: "dim" }, tr("Nothing yet.")) : h("table", { id: "history" },
@@ -20092,12 +20252,15 @@ class App {
       readBack();
     } });
     readBack();
+    const rateRead = h("div", { id: "rate-read", class: "small dim mono" });
     const rate = h("input", { id: "rate", type: "text", inputmode: "decimal", value: f.rate, oninput: (e) => {
       f.rate = e.target.value;
       paint();
     } });
     const choices = h("div", { class: "choices", id: "fee-choices" });
     const paint = () => {
+      const read = parseDecimal(f.rate);
+      mount(rateRead, f.rate.trim() === "" ? "" : Number.isFinite(read) ? tr("= {rate} sat/vB", { rate: read }) : tr("Enter a fee rate."));
       const est = this.send.estimates;
       mount(choices, ...(!est ? [h("span", { class: "dim small" }, tr("Fetching estimates…"))] : FEE_TARGETS.filter(([n]) => est[n] !== undefined).map(([n, name]) => h("button", {
         "aria-pressed": String(parseDecimal(f.rate) === est[n]), onclick: () => {
@@ -20153,7 +20316,7 @@ class App {
         amount.disabled = f.sendAll;
         readBack();
       } }), tr("Send everything (no change)")),
-      h("label", { for: "rate" }, tr("Fee rate (sat/vB, {min} to {max})", { min: MIN_RATE, max: MAX_RATE })), choices, h("div", { class: "row" }, rate),
+      h("label", { for: "rate" }, tr("Fee rate (sat/vB, {min} to {max})", { min: MIN_RATE, max: MAX_RATE })), choices, h("div", { class: "row" }, rate), rateRead,
       h("details", { open: f.hand ? true : null, ontoggle: (e) => (f.hand = e.target.open) },
         h("summary", {}, tr("Choose coins by hand")),
         h("p", { class: "small dim" }, tr("Exactly the ticked coins are spent, confirmed or not. With none ticked, the wallet chooses among confirmed coins.")),
@@ -20446,7 +20609,43 @@ class App {
         forget),
       h("div", { class: "panel" }, h("h2", {}, tr("Server")),
         h("p", {}, tr("Now:"), " ", h("span", { class: "mono", id: "current-server" }, this.state.servers[r.network])),
-        this.serverChooser()));
+        this.serverChooser()),
+      this.pricePanel());
+  }
+
+  pricePanel() {
+    const p = this.state.price || {};
+    const pick = h("select", { id: "price-currency" },
+      h("option", { value: "", selected: !p.currency }, tr("Don't show a price")),
+      ...CURRENCIES.map((c) => h("option", { value: c, selected: p.currency === c }, c)));
+    const url = h("input", { id: "price-url", type: "text", spellcheck: "false" });
+    const showUrl = () => {
+      url.value = pick.value ? p.urls?.[pick.value] || PRICE_DEFAULTS[pick.value] : "";
+      url.disabled = !pick.value;
+    };
+    pick.addEventListener("change", showUrl);
+    showUrl();
+    const message = h("div", {});
+    return h("div", { class: "panel" }, h("h2", {}, tr("Price")),
+      h("p", {}, tr("On mainnet accounts the balance shows what it's worth. Test networks show that their coins have no value, and fetch no price.")),
+      h("p", { class: "small dim" }, tr("The page asks the price server for the price and nothing else: no address, key or amount. The server learns your IP address and when you look, as the Esplora server does.")),
+      h("label", { for: "price-currency" }, tr("Currency")), pick,
+      h("label", { for: "price-url" }, tr("Price server")), url, message,
+      h("div", { class: "row" }, h("button", { id: "save-price", onclick: () => {
+        const urls = { ...(p.urls || {}) };
+        if (pick.value) {
+          try {
+            urls[pick.value] = parsePriceUrl(url.value);
+          } catch (e) {
+            if (!(e instanceof PriceError)) throw e;
+            mount(message, notice("bad", e.message));
+            return;
+          }
+          if (urls[pick.value] === PRICE_DEFAULTS[pick.value]) delete urls[pick.value];
+        }
+        this.state.price = { currency: pick.value || null, urls };
+        this.reload();
+      } }, tr("Save"))));
   }
 
   stopCamera() {
@@ -20455,7 +20654,7 @@ class App {
   }
 }
 
-__exports["App"] = App;
+__exports["priceUrlFor"] = priceUrlFor; __exports["App"] = App;
 }
 
 // ======== src/main.js ========
@@ -20466,22 +20665,25 @@ __exports["App"] = App;
 const { installCrypto } = __mod("src/crypto.js");
 const { parseServer } = __mod("src/esplora.js");
 const { load } = __mod("src/store.js");
-const { App } = __mod("src/ui.js");
+const { App, priceUrlFor } = __mod("src/ui.js");
+const { parsePriceUrl } = __mod("src/price.js");
 const { setLanguage, startLanguage, language } = __mod("src/i18n.js");
 
 // Narrows the build's connect-src to the one server this page was started
 // with (docs/ESPLORA.md, "Content-Security-Policy"). Before any request;
 // a policy added can't be taken back, so changing server reloads the page.
-function narrowPolicy(server) {
-  let origin = "'none'";
-  if (server) {
-    try {
-      origin = parseServer(server).origin;
-    } catch { /* stays 'none' */ }
-  }
+// The price server, if one is chosen and the account is on mainnet, is the only other.
+function narrowPolicy(server, priceUrl) {
+  const origins = [];
+  try {
+    if (server) origins.push(parseServer(server).origin);
+  } catch { /* not added */ }
+  try {
+    if (priceUrl) origins.push(new URL(parsePriceUrl(priceUrl)).origin);
+  } catch { /* not added */ }
   const meta = document.createElement("meta");
   meta.httpEquiv = "Content-Security-Policy";
-  meta.content = `connect-src ${origin}`;
+  meta.content = `connect-src ${origins.length ? [...new Set(origins)].join(" ") : "'none'"}`;
   document.head.append(meta);
 }
 
@@ -20489,7 +20691,7 @@ const state = load();
 setLanguage(startLanguage(state.language, navigator.languages || [navigator.language]));
 document.documentElement.lang = language();
 const record = state.accounts.find((a) => a.id === state.current) || state.accounts[0] || null;
-narrowPolicy(record ? state.servers[record.network] : null);
+narrowPolicy(record ? state.servers[record.network] : null, record ? priceUrlFor(state, record.network) : null);
 installCrypto();
 new App(document.getElementById("app"), state, record).start();
 
