@@ -10,11 +10,13 @@ import { Esplora, EsploraError, OWN_INTERVAL_MS, PRESETS, PUBLIC_INTERVAL_MS, pa
 import { scanAccount } from "../src/scan.js";
 import { cleanEstimates, selectCoins, vsizeOf, feeFor, feeWarnings, KINDS, MIN_RATE, SelectError } from "../src/coinselect.js";
 import { buildSpend, psbtBytes, BuildError, SEQUENCE_RBF } from "../src/build.js";
-import { readSigned } from "../src/signed.js";
+import { SignedReader, readSigned } from "../src/signed.js";
+import { makeQr } from "../src/qr.js";
 import { toHex, fromHex } from "../vendor/zerogap/psbt/bytes.js";
 import { parsePsbt } from "../vendor/zerogap/psbt/psbt.js";
 import { serializeXpub, parseXpub } from "../vendor/zerogap/bip32.js";
 import { electrumQrText } from "../vendor/zerogap/psbt/transport.js";
+import { split } from "../vendor/zerogap/bbqr.js";
 import { parseTx, serializeTx, txid as txidOf } from "../vendor/zerogap/psbt/tx.js";
 
 // A client on a clock of its own: sleeping takes no real time.
@@ -347,11 +349,6 @@ test("a PSBT holds what BITCOIN.md asks for", async () => {
   assert.equal(psbt.outputs[changeOut].fields.bip32.length, 1);
   assert.equal(psbt.outputs[1 - changeOut].fields.bip32.length, 0);
   assert.equal(spend.outputs[changeOut].value, 100000 - 20000 - spend.fee);
-  // without the previous transaction: the same transaction, smaller
-  const small = psbtBytes(account, spend, { includePrevious: false });
-  assert.ok(small.length < psbtBytes(account, spend).length);
-  assert.equal(txidOf(parsePsbt(small).tx), spend.txid);
-  assert.equal(parsePsbt(small).inputs[0].fields.nonWitnessUtxo, undefined);
 });
 
 test("no fingerprint, no PSBT", async () => {
@@ -476,16 +473,6 @@ test("the real signer signs what the wallet builds", { skip: !haveSigner && "no 
   assert.equal(chain.broadcasts[0], toHex(done.tx));
 });
 
-test("the signer also takes the PSBT without the previous transaction", { skip: !haveSigner && "no zerogap repository" }, async () => {
-  const { s, account } = await signetAccount();
-  const { scan, c } = await funded([100000], account);
-  const spend = await buildSpend(account, scan, { address: PAYEE, amount: 20000, rate: 2 }, c);
-  const psbt = s.psbtLib.parsePsbt(psbtBytes(account, spend, { includePrevious: false }));
-  const plan = s.sign.plan(psbt, s.master, { network: "testnet" });
-  assert.equal(plan.signable, 1);
-  assert.equal(s.sign.finalize(s.sign.signPsbt(psbt, s.master, { network: "testnet" }).psbt).txid, spend.txid);
-});
-
 test("a change output that isn't really ours would be caught by the signer", { skip: !haveSigner && "no zerogap repository" }, async () => {
   const { s, account } = await signetAccount();
   const { scan, c } = await funded([100000], account);
@@ -557,40 +544,38 @@ test("sizes of nested inputs", () => {
   assert.equal(near.change, 0);
 });
 
-for (const previous of [true, false]) {
-  test(`nested segwit through the real signer (previous transactions ${previous ? "in" : "left out"})`, { skip: !haveSigner && "no zerogap repository" }, async () => {
-    const { s, account } = await nestedAccount();
-    const chain = new Chain("signet");
-    chain.fund(addressAt(account, 0, 0).address, 60000);
-    chain.fund(addressAt(account, 0, 1).address, 70000);
-    const c = client(chain);
-    const scan = await scanAccount(account, c, { gapLimit: 5 });
-    const spend = await buildSpend(account, scan, { address: PAYEE, amount: 100000, rate: 3 }, c);
-    assert.equal(spend.inputs.length, 2);
-    assert.notEqual(spend.txid, spend.unsignedTxid);
+test("nested segwit through the real signer", { skip: !haveSigner && "no zerogap repository" }, async () => {
+  const { s, account } = await nestedAccount();
+  const chain = new Chain("signet");
+  chain.fund(addressAt(account, 0, 0).address, 60000);
+  chain.fund(addressAt(account, 0, 1).address, 70000);
+  const c = client(chain);
+  const scan = await scanAccount(account, c, { gapLimit: 5 });
+  const spend = await buildSpend(account, scan, { address: PAYEE, amount: 100000, rate: 3 }, c);
+  assert.equal(spend.inputs.length, 2);
+  assert.notEqual(spend.txid, spend.unsignedTxid);
 
-    const bytes = psbtBytes(account, spend, { includePrevious: previous });
-    const psbt = s.psbtLib.parsePsbt(bytes);
-    assert.ok(psbt.inputs.every((m) => m.fields.redeemScript?.length === 22));
-    const change = spend.outputs.findIndex((o) => o.change);
-    assert.equal(psbt.outputs[change].fields.redeemScript.length, 22);
-    assert.equal(spend.outputs[change].change.path, "m/49'/1'/0'/1/0");
+  const bytes = psbtBytes(account, spend);
+  const psbt = s.psbtLib.parsePsbt(bytes);
+  assert.ok(psbt.inputs.every((m) => m.fields.redeemScript?.length === 22));
+  const change = spend.outputs.findIndex((o) => o.change);
+  assert.equal(psbt.outputs[change].fields.redeemScript.length, 22);
+  assert.equal(spend.outputs[change].change.path, "m/49'/1'/0'/1/0");
 
-    const plan = s.sign.plan(psbt, s.master, { network: "testnet" });
-    assert.ok(plan.inputs.every((i) => i.sign), JSON.stringify(plan.inputs.map((i) => i.reason)));
-    assert.equal(plan.outputs[change].ours, true);
-    assert.equal(plan.outputs[change].role, "change");
-    assert.equal(plan.outputs[change].problem, null);
+  const plan = s.sign.plan(psbt, s.master, { network: "testnet" });
+  assert.ok(plan.inputs.every((i) => i.sign), JSON.stringify(plan.inputs.map((i) => i.reason)));
+  assert.equal(plan.outputs[change].ours, true);
+  assert.equal(plan.outputs[change].role, "change");
+  assert.equal(plan.outputs[change].problem, null);
 
-    const done = s.sign.finalize(s.sign.signPsbt(psbt, s.master, { network: "testnet" }).psbt);
-    assert.equal(done.txid, spend.txid, "the finished txid was known before signing");
-    assert.ok(done.vsize <= spend.vsize && spend.vsize - done.vsize <= 2, `estimated ${spend.vsize}, real ${done.vsize}`);
+  const done = s.sign.finalize(s.sign.signPsbt(psbt, s.master, { network: "testnet" }).psbt);
+  assert.equal(done.txid, spend.txid, "the finished txid was known before signing");
+  assert.ok(done.vsize <= spend.vsize && spend.vsize - done.vsize <= 2, `estimated ${spend.vsize}, real ${done.vsize}`);
 
-    const got = readSigned(s.transport.electrumQrText(done.tx), null, spend);
-    assert.equal(got.matches, true);
-    assert.equal(readSigned(electrumQrText(bytes), null, spend).matches, true); // the unsigned PSBT is recognised too
-  });
-}
+  const got = readSigned(s.transport.electrumQrText(done.tx), null, spend);
+  assert.equal(got.matches, true);
+  assert.equal(readSigned(electrumQrText(bytes), null, spend).matches, true); // the unsigned PSBT is recognised too
+});
 
 test("a nested transaction with another scriptSig isn't the one built", { skip: !haveSigner && "no zerogap repository" }, async () => {
   const { s, account } = await nestedAccount();
@@ -607,4 +592,49 @@ test("a nested transaction with another scriptSig isn't the one built", { skip: 
   // and an unsigned one with its scriptSig filled in isn't signed
   tx.inputs[0].witness = [];
   assert.throws(() => readSigned(toHex(serializeTx(tx)), null, spend), /isn't signed/);
+});
+
+// S2: the signer's own reader and its own output, not this page's idea of them.
+test("a series through the real signer, there and back, in any order", { skip: !haveSigner && "no zerogap repository", timeout: 60000 }, async () => {
+  const { s, account } = await signetAccount();
+  const { scan, c } = await funded(Array.from({ length: 80 }, () => 20000), account);
+  const spend = await buildSpend(account, scan, { address: PAYEE, sendAll: true, rate: 1 }, c);
+  assert.equal(spend.inputs.length, 80);
+  const bytes = psbtBytes(account, spend);
+  const scrambled = (parts) => [...parts.slice(1).reverse(), parts[0], ...parts.slice(0, 3)];
+
+  // there, as the page shows it: every code of one version, read in any order
+  const out = split(bytes, "P", { maxParts: 16 });
+  assert.ok(out.parts.length > 1);
+  const reader = new s.codes.CodeReader();
+  let got;
+  for (const part of scrambled(out.parts)) {
+    assert.equal(makeQr(part, "Alphanumeric", out.version).version, out.version);
+    got = reader.read(part);
+    if (got.payload) break;
+  }
+  assert.equal(got.payload.kind, "psbt");
+  assert.equal(toHex(got.payload.bytes), toHex(bytes));
+
+  // back: too big for its few-parts rule, so all at version 12, compressed
+  const signed = s.sign.signPsbt(s.psbtLib.parsePsbt(got.payload.bytes), s.master, { network: "testnet" }).psbt;
+  const done = s.sign.finalize(signed);
+  const answers = [["tx", done.tx, "T"], ["psbt", s.psbtLib.serializePsbt(signed), "P"]];
+  for (const [kind, answer, type] of answers) {
+    const series = s.codes.seriesFor(answer, kind);
+    assert.ok(series.parts.length > 8, `${kind}: ${series.parts.length} parts`);
+    assert.equal(series.version, 12);
+    assert.equal(series.encoding, "Z");
+    assert.ok(series.parts.every((p) => p.startsWith(`B$Z${type}`)));
+    const signedReader = new SignedReader(spend);
+    let result;
+    for (const part of scrambled(series.parts)) {
+      assert.equal(makeQr(part, "Alphanumeric", series.version).version, 12, "the page draws what the signer sends");
+      result = signedReader.add(part);
+      if (result.kind !== "progress") break;
+    }
+    assert.notEqual(result.kind, "progress", kind);
+    assert.equal(result.matches, true, kind);
+    if (kind === "tx") assert.equal(result.txid, spend.txid);
+  }
 });

@@ -225,12 +225,10 @@ hardened), and coin type from the chosen network. A version that disagrees
 with the network is refused.
 
 **Size:** the previous transaction can make the PSBT too big for one code.
-It then goes out as a BBQr series ("QR codes" below). zerogap's signer doesn't
-read series yet (S2), so the page also offers to leave out
-`PSBT_IN_NON_WITNESS_UTXO`, and says what that costs: the signer can no longer
-prove the amounts of the coins, so a lying server could trick it into a fee
-higher than it shows (the fee attack on segwit v0). It is the user's explicit
-choice, each time; it is never dropped silently.
+It then goes out as a BBQr series ("QR codes" below), or a file. It stays in
+every PSBT, with no way to leave it out: without it, the signer can't prove
+what the coins are worth, and a lying server could trick it into a fee higher
+than it shows (the fee attack on segwit v0).
 
 ## QR codes
 

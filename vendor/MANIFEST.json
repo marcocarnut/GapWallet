@@ -3,7 +3,7 @@
   "file": "zerogap/bip32.js",
   "sha256": "6f56f374719208ebc795285e983c74552546b55de6050671cd726f7bcf783fc4",
   "from": "zerogap",
-  "commit": "e70edf8abcce28aceea55bd9e4edbf5c16d33a52",
+  "commit": "8cbf6eb25859bcc5bbebcc0cde7c7b1d6f23c41b",
   "path": "apps/signer/lib/bip32.js",
   "license": "GPL-3.0-or-later"
  },
@@ -11,7 +11,7 @@
   "file": "zerogap/crypto.js",
   "sha256": "295d252d0f1dad7083b59fd3b165ee25f95d642d936b339bd805af5ab7cdb538",
   "from": "zerogap",
-  "commit": "e70edf8abcce28aceea55bd9e4edbf5c16d33a52",
+  "commit": "8cbf6eb25859bcc5bbebcc0cde7c7b1d6f23c41b",
   "path": "apps/signer/lib/crypto.js",
   "license": "GPL-3.0-or-later"
  },
@@ -19,7 +19,7 @@
   "file": "zerogap/bbqr.js",
   "sha256": "991263df736518ff65516e876739c696c956c07d1d3c8dd41a0efed17f0a1207",
   "from": "zerogap",
-  "commit": "e70edf8abcce28aceea55bd9e4edbf5c16d33a52",
+  "commit": "8cbf6eb25859bcc5bbebcc0cde7c7b1d6f23c41b",
   "path": "lib/js/bbqr.js",
   "license": "GPL-3.0-or-later"
  },
@@ -27,64 +27,64 @@
   "file": "zerogap/psbt/basen.js",
   "sha256": "8a469f7af07756fb62605132c3f447c5056628c1a4f2e6c49922e01d62e366ce",
   "from": "zerogap",
-  "commit": "e70edf8abcce28aceea55bd9e4edbf5c16d33a52",
-  "path": "apps/psbtview/lib/basen.js",
+  "commit": "8cbf6eb25859bcc5bbebcc0cde7c7b1d6f23c41b",
+  "path": "apps/signer/lib/psbt/basen.js",
   "license": "GPL-3.0-or-later"
  },
  {
   "file": "zerogap/psbt/bech32.js",
   "sha256": "6df4b0c32f260caa7c5c3a94885dfb4d23df9b08ba9ee47a136bd68bef150400",
   "from": "zerogap",
-  "commit": "e70edf8abcce28aceea55bd9e4edbf5c16d33a52",
-  "path": "apps/psbtview/lib/bech32.js",
+  "commit": "8cbf6eb25859bcc5bbebcc0cde7c7b1d6f23c41b",
+  "path": "apps/signer/lib/psbt/bech32.js",
   "license": "GPL-3.0-or-later"
  },
  {
   "file": "zerogap/psbt/bytes.js",
   "sha256": "eff18042156fc5d11be8c60fa4cf75edc187205337c9cd534244511ea92f7f8e",
   "from": "zerogap",
-  "commit": "e70edf8abcce28aceea55bd9e4edbf5c16d33a52",
-  "path": "apps/psbtview/lib/bytes.js",
+  "commit": "8cbf6eb25859bcc5bbebcc0cde7c7b1d6f23c41b",
+  "path": "apps/signer/lib/psbt/bytes.js",
   "license": "GPL-3.0-or-later"
  },
  {
   "file": "zerogap/psbt/hashes.js",
   "sha256": "d590ddaa487cfe6bc1e7ae91de8ff032bae5608564662128ae52a23add3f4291",
   "from": "zerogap",
-  "commit": "e70edf8abcce28aceea55bd9e4edbf5c16d33a52",
-  "path": "apps/psbtview/lib/hashes.js",
+  "commit": "8cbf6eb25859bcc5bbebcc0cde7c7b1d6f23c41b",
+  "path": "apps/signer/lib/psbt/hashes.js",
   "license": "GPL-3.0-or-later"
  },
  {
   "file": "zerogap/psbt/psbt.js",
   "sha256": "c07d0a925c75247cf8a15ef59ee3cbb2f30c2f42c68f3f8df3a568a0bec90893",
   "from": "zerogap",
-  "commit": "e70edf8abcce28aceea55bd9e4edbf5c16d33a52",
-  "path": "apps/psbtview/lib/psbt.js",
+  "commit": "8cbf6eb25859bcc5bbebcc0cde7c7b1d6f23c41b",
+  "path": "apps/signer/lib/psbt/psbt.js",
   "license": "GPL-3.0-or-later"
  },
  {
   "file": "zerogap/psbt/script.js",
   "sha256": "2caf811f3a497ae65a7408247ad45ec649515d35a78c120ca6e1b9ee8b037bfb",
   "from": "zerogap",
-  "commit": "e70edf8abcce28aceea55bd9e4edbf5c16d33a52",
-  "path": "apps/psbtview/lib/script.js",
+  "commit": "8cbf6eb25859bcc5bbebcc0cde7c7b1d6f23c41b",
+  "path": "apps/signer/lib/psbt/script.js",
   "license": "GPL-3.0-or-later"
  },
  {
   "file": "zerogap/psbt/transport.js",
-  "sha256": "07296afca8af40ef22ac6cfdfe28d77c5e766bd4d268b7cafab0761cf5b28f9f",
+  "sha256": "701cd38f2c9c0bdc801f7e0cd16166eec472627dec70b75b5cf739a579e1d1ea",
   "from": "zerogap",
-  "commit": "e70edf8abcce28aceea55bd9e4edbf5c16d33a52",
-  "path": "apps/psbtview/lib/transport.js",
+  "commit": "8cbf6eb25859bcc5bbebcc0cde7c7b1d6f23c41b",
+  "path": "apps/signer/lib/psbt/transport.js",
   "license": "GPL-3.0-or-later"
  },
  {
   "file": "zerogap/psbt/tx.js",
   "sha256": "55a51d1985a68e680465ed35d674a471789f879386b88f202d4832a03b51c3d6",
   "from": "zerogap",
-  "commit": "e70edf8abcce28aceea55bd9e4edbf5c16d33a52",
-  "path": "apps/psbtview/lib/tx.js",
+  "commit": "8cbf6eb25859bcc5bbebcc0cde7c7b1d6f23c41b",
+  "path": "apps/signer/lib/psbt/tx.js",
   "license": "GPL-3.0-or-later"
  },
  {

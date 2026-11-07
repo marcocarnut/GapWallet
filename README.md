@@ -35,7 +35,7 @@ Milestones W1 and W2, and the first part of W3, of the plan in zerogap's
 - Mainnet, signet and testnet4.
 - PSBTs go out as one Electrum Base43 QR code when they fit, or as an animated
   BBQr series; signed transactions come back the same ways (`docs/ESPLORA.md`,
-  "QR codes"). zerogap's signer reads series after S2.
+  "QR codes").
 - One recipient per transaction.
 
 ## How it's put together

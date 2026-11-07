@@ -293,7 +293,6 @@ test("start to end: scan, receive, build, real signer, camera, broadcast", { ski
   await hasText(page, "m/84'/1'/0'/1/0");
   await click(page, "#to-sign");
   await page.waitForSelector("#psbt-qr");
-  assert.equal(await page.$("#drop-previous"), null, "a small PSBT isn't offered the choice");
 
   // what the page shows goes to the real signer
   await page.$eval("details", (e) => { e.open = true; });
@@ -649,7 +648,7 @@ test("W2: a public key read with the camera; a seed's code doesn't reach the scr
   await second.ctx.close();
 });
 
-test("a transaction other than the one built needs an explicit yes; a big PSBT's choice is explicit", { skip }, async () => {
+test("a PSBT too big for one code goes out whole; a transaction other than the one built needs an explicit yes", { skip }, async () => {
   chain = bigChain(account()); // previous transactions so large that the PSBT can't fit one code
   const { page, ctx, seen } = await open();
   await importAccount(page);
@@ -667,13 +666,11 @@ test("a transaction other than the one built needs an explicit yes; a big PSBT's
   await hasText(page, "doesn't fit in one QR code");
   assert.equal(await page.$("#format-base43:disabled") !== null, true);
   await page.waitForSelector("#series-qr");
-  // the button stays off until the user acknowledges
-  assert.equal(await page.$eval("#drop-previous", (e) => e.disabled), true);
-  await click(page, "#ack-previous");
-  await click(page, "#drop-previous");
-  await page.waitForSelector("#psbt-qr");
-  await hasText(page, "Previous transactions are left out");
-  await hasText(page, "can't prove");
+  // the previous transactions stay in: nothing offers to take them out
+  assert.equal(await page.$("#drop-previous"), null);
+  await page.$eval("details", (e) => { e.open = true; });
+  const whole = signer.psbtLib.parsePsbt(fromBase64(await page.$eval("#psbt-text", (e) => e.value)));
+  assert.ok(whole.inputs.every((m) => m.fields.nonWitnessUtxo));
   assert.deepEqual(seen.errors, []);
 
   await click(page, "#to-scan");
