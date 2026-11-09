@@ -3,7 +3,7 @@
 // same choice. The random order of inputs and outputs is build.js's.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { compactSizeLength } from "../vendor/zerogap/psbt/bytes.js";
+import { compactSizeLength } from "../vendor/gapkeep/psbt/bytes.js";
 import { formatDecimal, tr } from "./i18n.js";
 
 export const MIN_RATE = 0.1, MAX_RATE = 10000;

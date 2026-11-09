@@ -1,8 +1,9 @@
 # GapWallet
 
-The online half of [ZeroGap](../lvglzero): a watch-only Bitcoin wallet in one
-HTML file. It holds public keys only. It watches an account, builds PSBTs for
-the offline signer, shows them as QR codes, reads the signed transaction back
+The online half of [GapKeep](https://gapkeep.org), "a tiny bare-metal OS for
+air-gapped apps" (its repository is `../lvglzero`): a watch-only Bitcoin wallet
+in one HTML file. It holds public keys only. It watches an account, builds PSBTs
+for the offline signer, shows them as QR codes, reads the signed transaction back
 with the webcam, and broadcasts it through an
 [Esplora](https://github.com/Blockstream/esplora) server (mempool.space, or
 your own).
@@ -27,7 +28,7 @@ nothing to install.
 
 ## Status
 
-Milestones W1 and W2, the first part of W3, and W4 to W6, of the plan in ZeroGap's
+Milestones W1 and W2, the first part of W3, and W4 to W6, of the plan in GapKeep's
 `docs/plans/BITCOIN.md`.
 
 - P2WPKH (`wpkh(…)`, zpub, vpub) and P2SH-P2WPKH (`sh(wpkh(…))`, ypub, upub)
@@ -65,12 +66,12 @@ Milestones W1 and W2, the first part of W3, and W4 to W6, of the plan in ZeroGap
 
 ```sh
 node tools/build.mjs        # writes gapwallet.html
-tools/vendor.py --check     # checks vendor/ against its manifest and ZeroGap's commit
+tools/vendor.py --check     # checks vendor/ against its manifest and GapKeep's commit
 npm install                 # only for the page tests: puppeteer-core drives Chromium
 npm test
 ```
 
-The tests need the ZeroGap repository next to this one (or `ZEROGAP_DIR`):
+The tests need the GapKeep repository next to this one (or `GAPKEEP_DIR`):
 PSBTs built here are signed by the real signer's library, not a second one.
 Node 18 or later; `npm test` needs Chromium for the page tests.
 
@@ -103,7 +104,7 @@ elsewhere. Below the box the page shows the amount it read, in full.
 
 ## Security
 
-- **No private keys.** The private-key functions the ZeroGap libraries ask for
+- **No private keys.** The private-key functions the GapKeep libraries ask for
   are stubs that throw. A pasted xprv, WIF, seed phrase or codex32 share is
   refused and cleared; nothing is stored.
 - **The signer is the boundary.** It shows what is really spent, from the
@@ -120,6 +121,6 @@ elsewhere. Below the box the page shows the amount it read, in full.
 ## Licence
 
 GPL-3.0-or-later: see `LICENSE`. Bundled libraries keep their own licences,
-all compatible: ZeroGap's PSBT and BIP-32 libraries (GPL-3.0-or-later), the noble
+all compatible: GapKeep's PSBT and BIP-32 libraries (GPL-3.0-or-later), the noble
 libraries and qrcode-generator (MIT), jsQR (Apache-2.0). `vendor/MANIFEST.json`
 lists each file; their licence texts are in `vendor/`.

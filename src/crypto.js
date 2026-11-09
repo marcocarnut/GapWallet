@@ -1,4 +1,4 @@
-// The cryptography the vendored zerogap libraries ask for (vendor/zerogap/
+// The cryptography the vendored GapKeep libraries ask for (vendor/gapkeep/
 // crypto.js), from the noble libraries.
 //
 // GapWallet holds no private keys, so it has no use for private-key
@@ -10,7 +10,7 @@ import { sha256, sha512 } from "../vendor/noble-hashes/sha2.js";
 import { ripemd160 } from "../vendor/noble-hashes/legacy.js";
 import { hmac as nobleHmac } from "../vendor/noble-hashes/hmac.js";
 import { Point } from "../vendor/noble-secp256k1/index.js";
-import { setCrypto, NEEDED } from "../vendor/zerogap/crypto.js";
+import { setCrypto, NEEDED } from "../vendor/gapkeep/crypto.js";
 
 const bigint = (bytes) => bytes.reduce((v, b) => (v << 8n) | BigInt(b), 0n);
 

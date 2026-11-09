@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  GapWallet: the online half of zerogap. A watch-only Bitcoin wallet: it holds
+  GapWallet: the online half of GapKeep. A watch-only Bitcoin wallet: it holds
   public keys, builds PSBTs for the offline signer, and broadcasts what comes
   back. It can't spend: no private key is ever in this page.
 
@@ -15,7 +15,7 @@
 
   This one file is the program, unminified. It is built from src/ and vendor/
   by tools/build.mjs; vendor/MANIFEST.json lists each bundled file's origin:
-    ZeroGap's PSBT and BIP-32 libraries (GPL-3.0-or-later)
+    GapKeep's PSBT and BIP-32 libraries (GPL-3.0-or-later)
     @noble/hashes, @noble/secp256k1 (MIT, Paul Miller)
     qrcode-generator (MIT, Kazuhiko Arase; "QR Code" is a trademark of DENSO WAVE)
     jsQR (Apache-2.0, Cosmo Wolfe)
@@ -23,7 +23,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qDI6A9dWHq7b8Qf2i5JLCXeMeYx38HgXkbbza5vJtwA='; style-src 'sha256-1imCSK8rmk5C8poqTEyMMfJ7hOMFvv0B0P1LSjLrCJo='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-QaDUVu1uYmxKyk4yOJ/0zl9y+WXQfBqIFNPOjuE3/nY='; style-src 'sha256-1imCSK8rmk5C8poqTEyMMfJ7hOMFvv0B0P1LSjLrCJo='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GapWallet</title>
@@ -3382,9 +3382,9 @@ const __TEST = /* @__PURE__ */ freeze({
 __exports["etc"] = etc; __exports["getPublicKey"] = getPublicKey; __exports["getSharedSecret"] = getSharedSecret; __exports["hash"] = hash; __exports["hashes"] = hashes; __exports["keygen"] = keygen; __exports["Point"] = Point; __exports["recoverPublicKey"] = recoverPublicKey; __exports["recoverPublicKeyAsync"] = recoverPublicKeyAsync; __exports["schnorr"] = schnorr; __exports["sign"] = sign; __exports["signAsync"] = signAsync; __exports["Signature"] = Signature; __exports["utils"] = utils; __exports["verify"] = verify; __exports["verifyAsync"] = verifyAsync; __exports["__TEST"] = __TEST;
 }
 
-// ======== vendor/zerogap/psbt/hashes.js ========
-{ const __exports = {}; __modules.set("vendor/zerogap/psbt/hashes.js", __exports);
-// The hashes the other modules need, given by the caller (zg:crypto's
+// ======== vendor/gapkeep/psbt/hashes.js ========
+{ const __exports = {}; __modules.set("vendor/gapkeep/psbt/hashes.js", __exports);
+// The hashes the other modules need, given by the caller (gk:crypto's
 // native ones in the app, node:crypto's in the tests), as apps/totp's
 // setHmac does:
 //
@@ -3419,19 +3419,20 @@ const hash160 = (data) => (ripemd160Fn ? ripemd160Fn(sha256(data)) : null);
 __exports["setHashes"] = setHashes; __exports["sha256"] = sha256; __exports["sha256d"] = sha256d; __exports["haveRipemd160"] = haveRipemd160; __exports["hash160"] = hash160;
 }
 
-// ======== vendor/zerogap/psbt/bytes.js ========
-{ const __exports = {}; __modules.set("vendor/zerogap/psbt/bytes.js", __exports);
+// ======== vendor/gapkeep/psbt/bytes.js ========
+{ const __exports = {}; __modules.set("vendor/gapkeep/psbt/bytes.js", __exports);
 // Bytes: hex, Base64, comparison, and a reader and writer for Bitcoin's
 // serialization (little-endian integers, CompactSize lengths).
 //
-// Pure: no zerogap imports, so Node and other apps (a signer) use it too.
+// Pure: no GapKeep imports, so Node and other apps (a signer) use it too.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // What every parser here throws: the message says what is wrong, for people.
 class DecodeError extends Error {
   constructor(message) {
-    super(message);
+    super(String(message));
+    this.text = message;   // a Message (text.js) where it is one: the app translates it
     this.name = "DecodeError";
   }
 }
@@ -3675,16 +3676,16 @@ const compactSizeLength = (v) => (v < 253 ? 1 : v < 0x10000 ? 3 : v < 0x10000000
 __exports["DecodeError"] = DecodeError; __exports["toHex"] = toHex; __exports["fromHex"] = fromHex; __exports["toBase64"] = toBase64; __exports["fromBase64"] = fromBase64; __exports["equal"] = equal; __exports["compare"] = compare; __exports["concat"] = concat; __exports["Reader"] = Reader; __exports["Writer"] = Writer; __exports["isHex"] = isHex; __exports["toHexReversed"] = toHexReversed; __exports["fromHexReversed"] = fromHexReversed; __exports["asciiBytes"] = asciiBytes; __exports["compactSizeLength"] = compactSizeLength;
 }
 
-// ======== vendor/zerogap/crypto.js ========
-{ const __exports = {}; __modules.set("vendor/zerogap/crypto.js", __exports);
+// ======== vendor/gapkeep/crypto.js ========
+{ const __exports = {}; __modules.set("vendor/gapkeep/crypto.js", __exports);
 // The cryptography the signing modules use, given by the caller: in the app
-// zg:crypto itself, under Node a stand-in with the same functions
+// gk:crypto itself, under Node a stand-in with the same functions
 // (tests/signer/), as the PSBT library's setHashes:
 //
-//   import * as crypto from "zg:crypto";
+//   import * as crypto from "gk:crypto";
 //   setCrypto(crypto);
 //
-// What is used, with zg:crypto's signatures (docs/API.md, "zg:crypto"):
+// What is used, with gk:crypto's signatures (docs/API.md, "gk:crypto"):
 // sha256, sha512, ripemd160, hmac, pbkdf2, isPrivateKey, isPublicKey,
 // publicKey, privateKeyTweakAdd, publicKeyTweakAdd, ecdsaSign, ecdsaVerify,
 // xOnlyPublicKey, schnorrSign, schnorrVerify, taprootTweakPublicKey,
@@ -3693,8 +3694,8 @@ __exports["DecodeError"] = DecodeError; __exports["toHex"] = toHex; __exports["f
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-const { setHashes } = __mod("vendor/zerogap/psbt/hashes.js");
-const { asciiBytes } = __mod("vendor/zerogap/psbt/bytes.js");
+const { setHashes } = __mod("vendor/gapkeep/psbt/hashes.js");
+const { asciiBytes } = __mod("vendor/gapkeep/psbt/bytes.js");
 
 const NEEDED = ["sha256", "sha512", "ripemd160", "hmac", "pbkdf2", "isPrivateKey", "isPublicKey", "publicKey",
   "privateKeyTweakAdd", "publicKeyTweakAdd", "ecdsaSign", "ecdsaVerify", "xOnlyPublicKey", "schnorrSign",
@@ -3744,7 +3745,7 @@ __exports["setCrypto"] = setCrypto; __exports["cr"] = cr; __exports["taggedHash"
 
 // ======== src/crypto.js ========
 { const __exports = {}; __modules.set("src/crypto.js", __exports);
-// The cryptography the vendored zerogap libraries ask for (vendor/zerogap/
+// The cryptography the vendored GapKeep libraries ask for (vendor/gapkeep/
 // crypto.js), from the noble libraries.
 //
 // GapWallet holds no private keys, so it has no use for private-key
@@ -3756,7 +3757,7 @@ const { sha256, sha512 } = __mod("vendor/noble-hashes/sha2.js");
 const { ripemd160 } = __mod("vendor/noble-hashes/legacy.js");
 const { hmac: nobleHmac } = __mod("vendor/noble-hashes/hmac.js");
 const { Point } = __mod("vendor/noble-secp256k1/index.js");
-const { setCrypto, NEEDED } = __mod("vendor/zerogap/crypto.js");
+const { setCrypto, NEEDED } = __mod("vendor/gapkeep/crypto.js");
 
 const bigint = (bytes) => bytes.reduce((v, b) => (v << 8n) | BigInt(b), 0n);
 
@@ -4008,8 +4009,8 @@ const PT_BR = {
   "Sign it Externally": "Assine Externamente",
   "This wallet is designed to be used with external signing apps — below you can export the prepared transaction in various formats to the signing app of your choice.": "Esta carteira foi feita para ser usada com aplicativos de assinatura externos — abaixo você pode exportar a transação preparada em vários formatos para o aplicativo de assinatura de sua escolha.",
   "PSBT: {n} bytes": "PSBT: {n} bytes",
-  "One code (Base43: Electrum, and ZeroGap's signer)": "Um código (Base43: Electrum e o assinador do ZeroGap)",
-  "BBQr: a series of codes (ZeroGap's signer, Coldcard, Sparrow)": "BBQr: uma série de códigos (assinador do ZeroGap, Coldcard, Sparrow)",
+  "One code (Base43: Electrum, and GapKeep's signer)": "Um código (Base43: Electrum e o assinador do GapKeep)",
+  "BBQr: a series of codes (GapKeep's signer, Coldcard, Sparrow)": "BBQr: uma série de códigos (assinador do GapKeep, Coldcard, Sparrow)",
   "This PSBT doesn't fit in one QR code: {n} characters, {max} at most. It goes out as a series. Electrum doesn't read those: for Electrum, save the PSBT as a file.": "Esta PSBT não cabe em um único código QR: {n} caracteres, no máximo {max}. Ela sai como uma série. O Electrum não lê séries: para o Electrum, salve a PSBT como arquivo.",
   "{n} characters, QR version {version}": "{n} caracteres, QR versão {version}",
   "This code is dense. If the camera can't read it, enlarge the window or use a series.": "Este código é denso. Se a câmera não conseguir lê-lo, aumente a janela ou use uma série.",
@@ -4474,8 +4475,8 @@ function download(bytes, name) {
 __exports["h"] = h; __exports["mount"] = mount; __exports["copyText"] = copyText; __exports["download"] = download;
 }
 
-// ======== vendor/zerogap/psbt/basen.js ========
-{ const __exports = {}; __modules.set("vendor/zerogap/psbt/basen.js", __exports);
+// ======== vendor/gapkeep/psbt/basen.js ========
+{ const __exports = {}; __modules.set("vendor/gapkeep/psbt/basen.js", __exports);
 // Base43 and Base58, as Electrum's base_encode() and base_decode()
 // (electrum/bitcoin.py), and Base58Check.
 //
@@ -4489,8 +4490,8 @@ __exports["h"] = h; __exports["mount"] = mount; __exports["copyText"] = copyText
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-const { DecodeError, equal, concat, toHex, fromHex } = __mod("vendor/zerogap/psbt/bytes.js");
-const { sha256d } = __mod("vendor/zerogap/psbt/hashes.js");
+const { DecodeError, equal, concat, toHex, fromHex } = __mod("vendor/gapkeep/psbt/bytes.js");
+const { sha256d } = __mod("vendor/gapkeep/psbt/hashes.js");
 
 const BASE43_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ$*+-./:";
 const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -4605,8 +4606,8 @@ function base58CheckDecode(text) {
 __exports["base58CheckEncode"] = base58CheckEncode; __exports["base58CheckDecode"] = base58CheckDecode; __exports["BASE43_ALPHABET"] = BASE43_ALPHABET; __exports["BASE58_ALPHABET"] = BASE58_ALPHABET; __exports["base43Encode"] = base43Encode; __exports["base43Decode"] = base43Decode; __exports["base58Encode"] = base58Encode; __exports["base58Decode"] = base58Decode; __exports["isBase43"] = isBase43;
 }
 
-// ======== vendor/zerogap/bip32.js ========
-{ const __exports = {}; __modules.set("vendor/zerogap/bip32.js", __exports);
+// ======== vendor/gapkeep/bip32.js ========
+{ const __exports = {}; __modules.set("vendor/gapkeep/bip32.js", __exports);
 // BIP-32 hierarchical deterministic keys, and extended public keys in the
 // SLIP-132 forms Electrum uses (xpub/ypub/zpub and tpub/upub/vpub).
 //
@@ -4629,9 +4630,9 @@ __exports["base58CheckEncode"] = base58CheckEncode; __exports["base58CheckDecode
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-const { cr, hash160, zero } = __mod("vendor/zerogap/crypto.js");
-const { asciiBytes, toHex, fromHex, equal, DecodeError } = __mod("vendor/zerogap/psbt/bytes.js");
-const { base58CheckEncode, base58CheckDecode } = __mod("vendor/zerogap/psbt/basen.js");
+const { cr, hash160, zero } = __mod("vendor/gapkeep/crypto.js");
+const { asciiBytes, toHex, fromHex, equal, DecodeError } = __mod("vendor/gapkeep/psbt/bytes.js");
+const { base58CheckEncode, base58CheckDecode } = __mod("vendor/gapkeep/psbt/basen.js");
 
 const HARDENED = 0x80000000;
 
@@ -4650,6 +4651,8 @@ const VERSIONS = {
   tpub: { pub: 0x043587cf, prv: 0x04358394, network: "testnet", script: "p2pkh" },
   upub: { pub: 0x044a5262, prv: 0x044a4e28, network: "testnet", script: "p2sh-p2wpkh" },
   vpub: { pub: 0x045f1cf6, prv: 0x045f18bc, network: "testnet", script: "p2wpkh" },
+  Zpub: { pub: 0x02aa7ed3, prv: 0x02aa7a99, network: "mainnet", script: "p2wsh" },
+  Vpub: { pub: 0x02575483, prv: 0x02575048, network: "testnet", script: "p2wsh" },
 };
 
 // The version to export an account with, for Electrum: by its script type
@@ -4660,6 +4663,7 @@ function versionFor(script, network) {
   switch (script) {
     case "p2wpkh": return test ? "vpub" : "zpub";
     case "p2sh-p2wpkh": return test ? "upub" : "ypub";
+    case "p2wsh": return test ? "Vpub" : "Zpub";
     default: return test ? "tpub" : "xpub";
   }
 }
@@ -4876,7 +4880,7 @@ __exports["Bip32Error"] = Bip32Error; __exports["versionFor"] = versionFor; __ex
 // like, before anything else reads them, and an error never repeats its input.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-const { HARDENED, parseXpub, serializeXpub, versionFor, Bip32Error } = __mod("vendor/zerogap/bip32.js");
+const { HARDENED, parseXpub, serializeXpub, versionFor, Bip32Error } = __mod("vendor/gapkeep/bip32.js");
 const { tr } = __mod("src/i18n.js");
 
 class ImportError extends Error {
@@ -5053,13 +5057,13 @@ const accountPath = (a) => `m/${a.purpose}'/${a.coinType}'/${a.account}'`;
 __exports["ImportError"] = ImportError; __exports["descriptorChecksum"] = descriptorChecksum; __exports["parseAccount"] = parseAccount; __exports["accountDescriptor"] = accountDescriptor; __exports["accountSlip132"] = accountSlip132; __exports["NETWORK_INFO"] = NETWORK_INFO; __exports["SCRIPT_INFO"] = SCRIPT_INFO; __exports["accountPath"] = accountPath;
 }
 
-// ======== vendor/zerogap/psbt/bech32.js ========
-{ const __exports = {}; __modules.set("vendor/zerogap/psbt/bech32.js", __exports);
+// ======== vendor/gapkeep/psbt/bech32.js ========
+{ const __exports = {}; __modules.set("vendor/gapkeep/psbt/bech32.js", __exports);
 // Bech32 (BIP-173) and Bech32m (BIP-350), and segwit addresses.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-const { DecodeError } = __mod("vendor/zerogap/psbt/bytes.js");
+const { DecodeError } = __mod("vendor/gapkeep/psbt/bytes.js");
 
 const CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 const CHARSET_INV = new Int8Array(128).fill(-1);
@@ -5176,16 +5180,16 @@ function segwitDecode(address, hrp = null) {
 __exports["bech32Encode"] = bech32Encode; __exports["bech32Decode"] = bech32Decode; __exports["convertBits"] = convertBits; __exports["segwitEncode"] = segwitEncode; __exports["segwitDecode"] = segwitDecode; __exports["BECH32"] = BECH32; __exports["BECH32M"] = BECH32M;
 }
 
-// ======== vendor/zerogap/psbt/script.js ========
-{ const __exports = {}; __modules.set("vendor/zerogap/psbt/script.js", __exports);
+// ======== vendor/gapkeep/psbt/script.js ========
+{ const __exports = {}; __modules.set("vendor/gapkeep/psbt/script.js", __exports);
 // Output scripts: what kind they are, their addresses on each network, and
 // back; multisig scripts; a readable disassembly.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-const { toHex, concat, DecodeError } = __mod("vendor/zerogap/psbt/bytes.js");
-const { segwitEncode, segwitDecode } = __mod("vendor/zerogap/psbt/bech32.js");
-const { base58CheckEncode, base58CheckDecode } = __mod("vendor/zerogap/psbt/basen.js");
+const { toHex, concat, DecodeError } = __mod("vendor/gapkeep/psbt/bytes.js");
+const { segwitEncode, segwitDecode } = __mod("vendor/gapkeep/psbt/bech32.js");
+const { base58CheckEncode, base58CheckDecode } = __mod("vendor/gapkeep/psbt/basen.js");
 
 const NETWORKS = {
   mainnet: { name: "Mainnet", hrp: "bc", p2pkh: 0x00, p2sh: 0x05, coinType: 0 },
@@ -5347,9 +5351,9 @@ __exports["parseScript"] = parseScript; __exports["disassemble"] = disassemble; 
 //     -> { address, script, redeemScript | null, pubkey, chain, index, path, steps }
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-const { HARDENED, deriveChild } = __mod("vendor/zerogap/bip32.js");
-const { hash160 } = __mod("vendor/zerogap/psbt/hashes.js");
-const { p2shScript, p2wpkhScript, scriptToAddress } = __mod("vendor/zerogap/psbt/script.js");
+const { HARDENED, deriveChild } = __mod("vendor/gapkeep/bip32.js");
+const { hash160 } = __mod("vendor/gapkeep/psbt/hashes.js");
+const { p2shScript, p2wpkhScript, scriptToAddress } = __mod("vendor/gapkeep/psbt/script.js");
 const { accountPath, NETWORK_INFO } = __mod("src/descriptor.js");
 
 const chains = new WeakMap(); // account -> [chain 0's node, chain 1's node]
@@ -5503,7 +5507,7 @@ __exports["historyItem"] = historyItem; __exports["scanAccount"] = scanAccount; 
 // same choice. The random order of inputs and outputs is build.js's.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-const { compactSizeLength } = __mod("vendor/zerogap/psbt/bytes.js");
+const { compactSizeLength } = __mod("vendor/gapkeep/psbt/bytes.js");
 const { formatDecimal, tr } = __mod("src/i18n.js");
 
 const MIN_RATE = 0.1, MAX_RATE = 10000;
@@ -5627,8 +5631,8 @@ function feeWarnings({ fee, amount, rate, estimate }) {
 __exports["vsizeOf"] = vsizeOf; __exports["cleanEstimates"] = cleanEstimates; __exports["SelectError"] = SelectError; __exports["selectCoins"] = selectCoins; __exports["feeWarnings"] = feeWarnings; __exports["MIN_RATE"] = MIN_RATE; __exports["MAX_RATE"] = MAX_RATE; __exports["DUST"] = DUST; __exports["KINDS"] = KINDS; __exports["feeFor"] = feeFor;
 }
 
-// ======== vendor/zerogap/psbt/tx.js ========
-{ const __exports = {}; __modules.set("vendor/zerogap/psbt/tx.js", __exports);
+// ======== vendor/gapkeep/psbt/tx.js ========
+{ const __exports = {}; __modules.set("vendor/gapkeep/psbt/tx.js", __exports);
 // Bitcoin transactions: parse and serialize (legacy and segwit, BIP-144),
 // txid, wtxid, weight.
 //
@@ -5643,8 +5647,8 @@ __exports["vsizeOf"] = vsizeOf; __exports["cleanEstimates"] = cleanEstimates; __
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-const { Reader, Writer, DecodeError, toHexReversed, compactSizeLength } = __mod("vendor/zerogap/psbt/bytes.js");
-const { sha256d } = __mod("vendor/zerogap/psbt/hashes.js");
+const { Reader, Writer, DecodeError, toHexReversed, compactSizeLength } = __mod("vendor/gapkeep/psbt/bytes.js");
+const { sha256d } = __mod("vendor/gapkeep/psbt/hashes.js");
 
 const MAX_MONEY = 2100000000000000;
 
@@ -5753,8 +5757,8 @@ const vsize = (tx) => Math.ceil(weight(tx) / 4);
 __exports["readTx"] = readTx; __exports["parseTx"] = parseTx; __exports["serializeTx"] = serializeTx; __exports["witnessSize"] = witnessSize; __exports["weight"] = weight; __exports["MAX_MONEY"] = MAX_MONEY; __exports["hasWitness"] = hasWitness; __exports["txid"] = txid; __exports["wtxid"] = wtxid; __exports["outputSize"] = outputSize; __exports["inputBaseSize"] = inputBaseSize; __exports["vsize"] = vsize;
 }
 
-// ======== vendor/zerogap/psbt/psbt.js ========
-{ const __exports = {}; __modules.set("vendor/zerogap/psbt/psbt.js", __exports);
+// ======== vendor/gapkeep/psbt/psbt.js ========
+{ const __exports = {}; __modules.set("vendor/gapkeep/psbt/psbt.js", __exports);
 // PSBT: Partially Signed Bitcoin Transactions, version 0 (BIP-174) and
 // version 2 (BIP-370). Parse, check, serialize.
 //
@@ -5772,8 +5776,8 @@ __exports["readTx"] = readTx; __exports["parseTx"] = parseTx; __exports["seriali
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-const { Reader, Writer, DecodeError, equal, toHex } = __mod("vendor/zerogap/psbt/bytes.js");
-const { parseTx } = __mod("vendor/zerogap/psbt/tx.js");
+const { Reader, Writer, DecodeError, equal, toHex } = __mod("vendor/gapkeep/psbt/bytes.js");
+const { parseTx } = __mod("vendor/gapkeep/psbt/tx.js");
 
 const MAGIC = Uint8Array.of(0x70, 0x73, 0x62, 0x74, 0xff); // "psbt" 0xff
 
@@ -6270,10 +6274,10 @@ __exports["PsbtError"] = PsbtError; __exports["computeLocktime"] = computeLockti
 const { addressAt } = __mod("src/account.js");
 const { NETWORK_INFO } = __mod("src/descriptor.js");
 const { MIN_RATE, MAX_RATE, DUST, KINDS, SelectError, selectCoins } = __mod("src/coinselect.js");
-const { concat, fromHex, fromHexReversed, toHex, equal, Writer, DecodeError } = __mod("vendor/zerogap/psbt/bytes.js");
-const { addressToScript, classify } = __mod("vendor/zerogap/psbt/script.js");
-const { parseTx, serializeTx, txid: txidOf } = __mod("vendor/zerogap/psbt/tx.js");
-const { parsePsbt, serializePsbt, setEntry, GLOBAL, IN, OUT } = __mod("vendor/zerogap/psbt/psbt.js");
+const { concat, fromHex, fromHexReversed, toHex, equal, Writer, DecodeError } = __mod("vendor/gapkeep/psbt/bytes.js");
+const { addressToScript, classify } = __mod("vendor/gapkeep/psbt/script.js");
+const { parseTx, serializeTx, txid: txidOf } = __mod("vendor/gapkeep/psbt/tx.js");
+const { parsePsbt, serializePsbt, setEntry, GLOBAL, IN, OUT } = __mod("vendor/gapkeep/psbt/psbt.js");
 const { tr } = __mod("src/i18n.js");
 
 const SEQUENCE_RBF = 0xfffffffd;
@@ -6432,9 +6436,76 @@ const hexOf = toHex;
 __exports["BuildError"] = BuildError; __exports["randomBelow"] = randomBelow; __exports["paymentScript"] = paymentScript; __exports["buildSpend"] = buildSpend; __exports["psbtBytes"] = psbtBytes; __exports["SEQUENCE_RBF"] = SEQUENCE_RBF; __exports["hexOf"] = hexOf;
 }
 
-// ======== vendor/zerogap/psbt/transport.js ========
-{ const __exports = {}; __modules.set("vendor/zerogap/psbt/transport.js", __exports);
-// How transactions travel in QR codes between zerogap and Electrum.
+// ======== vendor/gapkeep/text.js ========
+{ const __exports = {}; __modules.set("vendor/gapkeep/text.js", __exports);
+// Text for people, made in pure code (Node too) and translated by the app.
+//
+//   t("Input {n}: the amount is unknown.", { n: 2 })     a Message
+//   plural(count, "{n} input", "{n} inputs", params)     a Message
+//   btcValue(sats), satsValue(sats), numberValue(x, decimals)   values for params
+//
+// A Message is a String: its English, the key with the params filled in, as
+// the libraries always wrote it (tests and logs read that). It also keeps
+// the key and the params, so the app can say it in the person's language
+// (lib/psbt/view.js, say()): gk:i18n's t() with the same key, amounts
+// formatted the language's way. Params may be Messages themselves.
+//
+// The keys are string literals in calls of t() and plural(), as
+// tools/i18n.py finds them; the catalog is lang/<language>.json.
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+class Message extends String {
+  constructor(english, key, params, forms) {
+    super(english);
+    this.key = key;
+    this.params = params;
+    this.forms = forms || null;   // a plural's { n, one, other }
+  }
+}
+
+// Values that are written differently in each language
+const btcValue = (sats) => ({ $btc: Number(sats) });       // 0.00119000, no unit
+const satsValue = (sats) => ({ $sats: Number(sats) });     // 1234, no unit
+const numberValue = (x, decimals) => ({ $number: x, decimals });
+
+// The English way of the values: as the libraries wrote them before
+function english(v) {
+  if (v instanceof Message) return String(v);
+  if (v && typeof v === "object") {
+    if ("$btc" in v) return formatBtcEnglish(v.$btc);
+    if ("$sats" in v) return String(v.$sats);
+    if ("$number" in v) return v.decimals === undefined ? String(v.$number) : v.$number.toFixed(v.decimals);
+  }
+  return String(v);
+}
+
+function formatBtcEnglish(sats) {
+  const neg = sats < 0, a = Math.abs(sats);
+  return (neg ? "-" : "") + Math.floor(a / 1e8) + "." + String(a % 1e8).padStart(8, "0");
+}
+
+const fill = (key, params) => key.replace(/\{\{|\}\}|\{(\w+)\}/g, (m, name) =>
+  (m === "{{" ? "{" : m === "}}" ? "}" : params && name in params ? english(params[name]) : m));
+
+function t(key, params = {}) {
+  return new Message(fill(key, params), key, params);
+}
+
+function plural(n, one, other, params = {}) {
+  const all = { ...params, n };
+  return new Message(fill(n === 1 ? one : other, all), n === 1 ? one : other, all, { n, one, other });
+}
+
+// "Input 1", "Inputs 1, 3": a list of numbers in a sentence
+const numbers = (list) => list.join(", ");
+
+__exports["Message"] = Message; __exports["t"] = t; __exports["plural"] = plural; __exports["btcValue"] = btcValue; __exports["satsValue"] = satsValue; __exports["numberValue"] = numberValue; __exports["numbers"] = numbers;
+}
+
+// ======== vendor/gapkeep/psbt/transport.js ========
+{ const __exports = {}; __modules.set("vendor/gapkeep/psbt/transport.js", __exports);
+// How transactions travel in QR codes between GapKeep and Electrum.
 //
 // Electrum shows a PSBT (or a signed transaction) as one QR code: the
 // bytes in Base43 (PartialTransaction.to_qr_data(), electrum/transaction.py),
@@ -6452,10 +6523,11 @@ __exports["BuildError"] = BuildError; __exports["randomBelow"] = randomBelow; __
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-const { DecodeError, fromHex, isHex, fromBase64, toHex, equal } = __mod("vendor/zerogap/psbt/bytes.js");
-const { base43Encode, base43Decode, isBase43 } = __mod("vendor/zerogap/psbt/basen.js");
-const { isPsbt } = __mod("vendor/zerogap/psbt/psbt.js");
-const { parseTx } = __mod("vendor/zerogap/psbt/tx.js");
+const { t } = __mod("vendor/gapkeep/text.js");
+const { DecodeError, fromHex, isHex, fromBase64, toHex, equal } = __mod("vendor/gapkeep/psbt/bytes.js");
+const { base43Encode, base43Decode, isBase43 } = __mod("vendor/gapkeep/psbt/basen.js");
+const { isPsbt } = __mod("vendor/gapkeep/psbt/psbt.js");
+const { parseTx } = __mod("vendor/gapkeep/psbt/tx.js");
 
 const MAX_BASE43 = 30000; // Electrum's limit (quadratic decoding)
 
@@ -6467,15 +6539,17 @@ const OLD_ELECTRUM = Uint8Array.of(0x45, 0x50, 0x54, 0x46, 0xff); // "EPTF" 0xff
 // Throws DecodeError with a message for people.
 function readPayload(text, bytes = null) {
   if (text === null || text === undefined) {
-    if (!bytes || bytes.length === 0) throw new DecodeError("The code is empty.");
+    if (!bytes || bytes.length === 0) throw new DecodeError(t("The code is empty."));
     if (isPsbt(bytes)) return { encoding: "binary", bytes, kind: "psbt" };
-    throw new DecodeError("This code holds binary data, not a transaction in a form Electrum uses.");
+    throw new DecodeError(t("This code holds binary data, not a transaction in a form Electrum uses."));
   }
   const s = text.replace(/\s/g, "");
-  if (s.length === 0) throw new DecodeError("The code is empty.");
+  if (s.length === 0) throw new DecodeError(t("The code is empty."));
   const lower = s.slice(0, 16).toLowerCase();
-  if (lower.startsWith("bitcoin:")) throw new DecodeError("This is a payment request (a bitcoin: link), not a transaction.");
-  if (lower.startsWith("ur:")) throw new DecodeError("This is a UR code (ur:...). Only Electrum's single QR codes are read for now.");
+  if (lower.startsWith("bitcoin:")) throw new DecodeError(t("This is a payment request (a bitcoin: link), not a transaction."));
+  if (lower.startsWith("ur:")) {
+    throw new DecodeError(t("This is a UR code (ur:...). Only Electrum's single QR codes are read for now."));
+  }
 
   let encoding = null, out = null;
   if (isHex(s)) {
@@ -6490,13 +6564,16 @@ function readPayload(text, bytes = null) {
     }
   }
   if (encoding === null && isBase43(s)) {
-    if (s.length > MAX_BASE43) throw new DecodeError(`The code is too long (${s.length} characters): Electrum reads at most ${MAX_BASE43}.`);
+    if (s.length > MAX_BASE43) {
+      throw new DecodeError(t("The code is too long ({length} characters): Electrum reads at most {max}.",
+        { length: s.length, max: MAX_BASE43 }));
+    }
     encoding = "base43";
     out = base43Decode(s);
   }
-  if (encoding === null) throw new DecodeError("This code is not a transaction: it is not hex, a PSBT in Base64, or Base43.");
+  if (encoding === null) throw new DecodeError(t("This code is not a transaction: it is not hex, a PSBT in Base64, or Base43."));
   if (out.length >= 5 && equal(out.subarray(0, 5), OLD_ELECTRUM)) {
-    throw new DecodeError("This is a partial transaction from Electrum before 4.0, which is not supported.");
+    throw new DecodeError(t("This is a partial transaction from Electrum before 4.0, which is not supported."));
   }
   const kind = isPsbt(out) ? "psbt" : "tx";
   // BBQr ("B$" and a header) is also Base43's alphabet: it is BBQr when it
@@ -6506,7 +6583,7 @@ function readPayload(text, bytes = null) {
       parseTx(out);
     } catch (e) {
       if (!(e instanceof DecodeError)) throw e;
-      throw new DecodeError("This is a BBQr code (B$...) with a damaged header.");
+      throw new DecodeError(t("This is a BBQr code (B$...) with a damaged header."));
     }
   }
   return { encoding, bytes: out, kind };
@@ -6525,14 +6602,14 @@ function electrumQrText(bytes) {
 __exports["readPayload"] = readPayload; __exports["electrumQrText"] = electrumQrText; __exports["MAX_BASE43"] = MAX_BASE43;
 }
 
-// ======== vendor/zerogap/bbqr.js ========
-{ const __exports = {}; __modules.set("vendor/zerogap/bbqr.js", __exports);
+// ======== vendor/gapkeep/bbqr.js ========
+{ const __exports = {}; __modules.set("vendor/gapkeep/bbqr.js", __exports);
 // BBQr: a file as a series of QR codes ("Better Bitcoin QR", Coinkite,
 // https://github.com/coinkite/BBQr, BBQr.md). Coldcard, Sparrow and others
 // use it for PSBTs and transactions too big for one QR code.
 //
-// One file, pure JavaScript, no dependencies: it runs in zerogap apps
-// (QuickJS), in Node and in browsers. Its home is zerogap's lib/js/; apps get
+// One file, pure JavaScript, no dependencies: it runs in GapKeep apps
+// (QuickJS), in Node and in browsers. Its home is GapKeep's lib/js/; apps get
 // copies made by tools/share_libs.py, other projects copy it byte for byte
 // with its SHA-256. Tested by tests/bbqr/run_node.mjs.
 //
@@ -7071,11 +7148,11 @@ __exports["BBQrError"] = BBQrError; __exports["partCapacity"] = partCapacity; __
 // scriptSig of a nested input (build.js, finishedTxid).
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-const { toHex, DecodeError } = __mod("vendor/zerogap/psbt/bytes.js");
-const { readPayload } = __mod("vendor/zerogap/psbt/transport.js");
-const { isPsbt, parsePsbt } = __mod("vendor/zerogap/psbt/psbt.js");
-const { parseTx, txid: txidOf, serializeTx } = __mod("vendor/zerogap/psbt/tx.js");
-const { BBQrError, FILE_TYPES, Joiner, isBBQr } = __mod("vendor/zerogap/bbqr.js");
+const { toHex, DecodeError } = __mod("vendor/gapkeep/psbt/bytes.js");
+const { readPayload } = __mod("vendor/gapkeep/psbt/transport.js");
+const { isPsbt, parsePsbt } = __mod("vendor/gapkeep/psbt/psbt.js");
+const { parseTx, txid: txidOf, serializeTx } = __mod("vendor/gapkeep/psbt/tx.js");
+const { BBQrError, FILE_TYPES, Joiner, isBBQr } = __mod("vendor/gapkeep/bbqr.js");
 const { tr } = __mod("src/i18n.js");
 
 // The most a series may unpack to. A signed transaction is far smaller; this
@@ -19975,11 +20052,11 @@ const { LANGUAGES, formatCents, formatDate, formatDecimal, language, plural, set
 const { save } = __mod("src/store.js");
 const { LabelError, MAX_FILE: MAX_LABEL_FILE, MAX_LABEL, clean, exportLabels, importLabels, labelsOf, ownAddresses, saveLabels } = __mod("src/labels.js");
 const { CURRENCIES, PRICE_DEFAULTS, PriceError, fetchPrice, parsePriceUrl, valueInCents } = __mod("src/price.js");
-const { toBase64 } = __mod("vendor/zerogap/psbt/bytes.js");
-const { electrumQrText } = __mod("vendor/zerogap/psbt/transport.js");
-const { BBQrError, split } = __mod("vendor/zerogap/bbqr.js");
-const { DecodeError } = __mod("vendor/zerogap/psbt/bytes.js");
-const { scriptToAddress } = __mod("vendor/zerogap/psbt/script.js");
+const { toBase64 } = __mod("vendor/gapkeep/psbt/bytes.js");
+const { electrumQrText } = __mod("vendor/gapkeep/psbt/transport.js");
+const { BBQrError, split } = __mod("vendor/gapkeep/bbqr.js");
+const { DecodeError } = __mod("vendor/gapkeep/psbt/bytes.js");
+const { scriptToAddress } = __mod("vendor/gapkeep/psbt/script.js");
 
 const btc = (sats) => `${formatBtc(sats)} BTC`;
 const shortId = (id) => `${id.slice(0, 10)}…${id.slice(-6)}`;
@@ -20587,8 +20664,8 @@ class App {
     const parts = [h("h2", {}, tr("Sign it Externally")),
       h("p", { id: "sign-externally" }, tr("This wallet is designed to be used with external signing apps — below you can export the prepared transaction in various formats to the signing app of your choice.")),
       h("p", { class: "small dim", id: "psbt-size" }, tr("PSBT: {n} bytes", { n: bytes.length })),
-      choose("base43", tr("One code (Base43: Electrum, and ZeroGap's signer)"), !single),
-      choose("bbqr", tr("BBQr: a series of codes (ZeroGap's signer, Coldcard, Sparrow)"), false)];
+      choose("base43", tr("One code (Base43: Electrum, and GapKeep's signer)"), !single),
+      choose("bbqr", tr("BBQr: a series of codes (GapKeep's signer, Coldcard, Sparrow)"), false)];
     if (!single) parts.push(notice("warn", tr("This PSBT doesn't fit in one QR code: {n} characters, {max} at most. It goes out as a series. Electrum doesn't read those: for Electrum, save the PSBT as a file.", { n: text.length, max: MAX_ALPHANUMERIC })));
     if (format === "base43") {
       const canvas = h("canvas", { class: "code", id: "psbt-qr" });

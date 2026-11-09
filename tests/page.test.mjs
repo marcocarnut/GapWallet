@@ -11,14 +11,14 @@ import { Chain, haveSigner, loadSigner, MASTER_FINGERPRINT } from "./helpers.mjs
 import { addressAt } from "../src/account.js";
 import { accountDescriptor, parseAccount } from "../src/descriptor.js";
 import { makeQr } from "../src/qr.js";
-import { fromBase64, toHex } from "../vendor/zerogap/psbt/bytes.js";
+import { fromBase64, toHex } from "../vendor/gapkeep/psbt/bytes.js";
 
 const CHROME = ["/usr/bin/chromium", "/usr/bin/google-chrome"].find(existsSync);
 let puppeteer = null;
 try {
   puppeteer = (await import("puppeteer-core")).default;
 } catch { /* skipped */ }
-const skip = !CHROME || !puppeteer || !haveSigner ? "needs Chromium, puppeteer-core and the ZeroGap repository" : false;
+const skip = !CHROME || !puppeteer || !haveSigner ? "needs Chromium, puppeteer-core and the GapKeep repository" : false;
 
 const HTML = readFileSync(new URL("../gapwallet.html", import.meta.url), "utf8");
 const cors = { "Access-Control-Allow-Origin": "*" };
@@ -470,7 +470,7 @@ test("W2: a large PSBT as an animated series, read off the screen and signed; th
 
   // what's on the screen, frame by frame, through the page's decoder, as a camera would
   const { decodeFrame } = await import("../src/qr.js");
-  const { Joiner } = await import("../vendor/zerogap/bbqr.js");
+  const { Joiner } = await import("../vendor/gapkeep/bbqr.js");
   const j = new Joiner();
   const seenParts = new Set();
   for (let tries = 0; tries < 200 && seenParts.size < total; tries++) {
@@ -502,7 +502,7 @@ test("W2: a large PSBT as an animated series, read off the screen and signed; th
   // sign what came off the screen, and answer with a series through the fake camera
   const psbt = signer.psbtLib.parsePsbt(file.bytes);
   const done = signer.sign.finalize(signer.sign.signPsbt(psbt, signer.master, { network: "testnet" }).psbt);
-  const { split } = await import("../vendor/zerogap/bbqr.js");
+  const { split } = await import("../vendor/gapkeep/bbqr.js");
   const series = split(done.tx, "T", { encoding: "2", maxParts: 4 });
   assert.ok(series.parts.length > 1, "the signed transaction needs several codes here");
   await click(page, "#to-scan");
@@ -541,7 +541,7 @@ test("W2: a series pasted as lines; a damaged one is said to be", { skip }, asyn
   await click(page, "#to-scan");
   await page.waitForSelector("#signed");
 
-  const { split } = await import("../vendor/zerogap/bbqr.js");
+  const { split } = await import("../vendor/gapkeep/bbqr.js");
   const { parts } = split(done.tx, "T", { encoding: "H", maxParts: 3, minVersion: 3 });
   const paste = async (v) => {
     await page.$eval("#signed", (e, x) => { e.value = x; }, v);
@@ -636,7 +636,7 @@ test("W2: a public key read with the camera; a seed's code doesn't reach the scr
 
   const second = await open();
   await click(second.page, "input[value=signet]");
-  const { split } = await import("../vendor/zerogap/bbqr.js");
+  const { split } = await import("../vendor/gapkeep/bbqr.js");
   const descriptor = accountDescriptor(account());
   const { parts } = split(new TextEncoder().encode(descriptor), "U", { encoding: "2", maxParts: 2, minVersion: 2 });
   assert.equal(parts.length, 2);

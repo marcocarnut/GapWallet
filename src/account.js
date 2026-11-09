@@ -4,9 +4,9 @@
 //     -> { address, script, redeemScript | null, pubkey, chain, index, path, steps }
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { HARDENED, deriveChild } from "../vendor/zerogap/bip32.js";
-import { hash160 } from "../vendor/zerogap/psbt/hashes.js";
-import { p2shScript, p2wpkhScript, scriptToAddress } from "../vendor/zerogap/psbt/script.js";
+import { HARDENED, deriveChild } from "../vendor/gapkeep/bip32.js";
+import { hash160 } from "../vendor/gapkeep/psbt/hashes.js";
+import { p2shScript, p2wpkhScript, scriptToAddress } from "../vendor/gapkeep/psbt/script.js";
 import { accountPath, NETWORK_INFO } from "./descriptor.js";
 
 const chains = new WeakMap(); // account -> [chain 0's node, chain 1's node]

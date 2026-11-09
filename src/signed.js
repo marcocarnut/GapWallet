@@ -13,11 +13,11 @@
 // scriptSig of a nested input (build.js, finishedTxid).
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { toHex, DecodeError } from "../vendor/zerogap/psbt/bytes.js";
-import { readPayload } from "../vendor/zerogap/psbt/transport.js";
-import { isPsbt, parsePsbt } from "../vendor/zerogap/psbt/psbt.js";
-import { parseTx, txid as txidOf, serializeTx } from "../vendor/zerogap/psbt/tx.js";
-import { BBQrError, FILE_TYPES, Joiner, isBBQr } from "../vendor/zerogap/bbqr.js";
+import { toHex, DecodeError } from "../vendor/gapkeep/psbt/bytes.js";
+import { readPayload } from "../vendor/gapkeep/psbt/transport.js";
+import { isPsbt, parsePsbt } from "../vendor/gapkeep/psbt/psbt.js";
+import { parseTx, txid as txidOf, serializeTx } from "../vendor/gapkeep/psbt/tx.js";
+import { BBQrError, FILE_TYPES, Joiner, isBBQr } from "../vendor/gapkeep/bbqr.js";
 import { tr } from "./i18n.js";
 
 // The most a series may unpack to. A signed transaction is far smaller; this

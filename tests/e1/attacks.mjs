@@ -1,12 +1,12 @@
 // E1, part 1, the attacks (docs/E1.md): PSBTs this wallet built, edited as a
-// hostile computer would, through the real signer app in zerogap's simulator.
+// hostile computer would, through the real signer app in GapKeep's simulator.
 // The signer is the one being tested: the wallet isn't involved after the edit.
 //
 //   node --experimental-default-type=module tests/e1/attacks.mjs [out-dir]
 //
-// Needs ZEROGAP_DIR (default ../lvglzero) with sim/build/zgsim built, QR decoder
+// Needs GAPKEEP_DIR (default ../lvglzero) with sim/build/gksim built, QR decoder
 // included. Not part of npm test. The key is BIP-39's public "abandon ... about",
-// typed as zerogap's own scenario does, and nothing here touches a network.
+// typed as GapKeep's own scenario does, and nothing here touches a network.
 // Exits non-zero if the signer doesn't do what a row expects.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -16,23 +16,23 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeF
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Chain, ZEROGAP, loadSigner } from "../helpers.mjs";
+import { Chain, GAPKEEP, loadSigner } from "../helpers.mjs";
 import { parseAccount } from "../../src/descriptor.js";
 import { addressAt } from "../../src/account.js";
 import { Esplora } from "../../src/esplora.js";
 import { scanAccount } from "../../src/scan.js";
 import { buildSpend, psbtBytes } from "../../src/build.js";
-import { toHex } from "../../vendor/zerogap/psbt/bytes.js";
-import { GLOBAL, IN, OUT, parsePsbt, serializePsbt, setEntry } from "../../vendor/zerogap/psbt/psbt.js";
-import { serializeTx } from "../../vendor/zerogap/psbt/tx.js";
-import { electrumQrText } from "../../vendor/zerogap/psbt/transport.js";
+import { toHex } from "../../vendor/gapkeep/psbt/bytes.js";
+import { GLOBAL, IN, OUT, parsePsbt, serializePsbt, setEntry } from "../../vendor/gapkeep/psbt/psbt.js";
+import { serializeTx } from "../../vendor/gapkeep/psbt/tx.js";
+import { electrumQrText } from "../../vendor/gapkeep/psbt/transport.js";
 
 const PAYEE = "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx";
 const COINS = [60000, 70000];
 const AMOUNT = 100000;
 const LOWER_BY = 30000;
 const NO_KEY = new Uint8Array(0);
-// BIP-39's phrase split 2-of-3, zerogap's tests/signer/signer.txt.in: public test data.
+// BIP-39's phrase split 2-of-3, GapKeep's tests/signer/signer.txt.in: public test data.
 const SHARES = ["ms12zgsqa40sgqvwltnun3f8drxxujvljm648z42my97v2h0", "MS12 ZGSQ CADP 5Q7M V8JL JHZE GN00 LY7V YXSZ CJRW FVJA X6ZD"];
 
 const s = await loadSigner();
@@ -97,7 +97,7 @@ async function casesFor(purpose) {
   // told yes anyway, the signer signs the honest input and leaves the one lied about
   const partly = s.sign.signPsbt(parsePsbt(lowerAmounts(bytes, [0])), s.master, { network: "testnet" });
   assert.deepEqual(partly.signed.map((x) => x.input), [1]);
-  assert.match(partly.skipped[0].reason, /disagree/);
+  assert.match(String(partly.skipped[0].reason), /disagree/);
 
   const attacker = addressAt(accountAt(attackerMaster, "01020304", purpose, 0), 1, 0);
   const ours = (a, index) => {
@@ -210,7 +210,7 @@ function judge(c, got) {
 }
 
 const OUTDIR = process.argv[2] || mkdtempSync(join(tmpdir(), "gapwallet-e1-"));
-const sim = join(ZEROGAP, "sim/build/zgsim");
+const sim = join(GAPKEEP, "sim/build/gksim");
 assert.ok(existsSync(sim), `no simulator at ${sim}: make -C sim`);
 const cases = [...await casesFor(84), ...await casesFor(49)];
 mkdirSync(OUTDIR, { recursive: true });
@@ -220,11 +220,11 @@ for (const c of cases) writeFileSync(join(OUTDIR, `${c.name.replace(/\W+/g, "-")
 
 const card = mkdtempSync(join(tmpdir(), "gapwallet-card-"));
 mkdirSync(join(card, "apps"));
-for (const a of readdirSync(join(ZEROGAP, "apps"))) {
-  if (a !== "launcher") cpSync(join(ZEROGAP, "apps", a), join(card, "apps", a), { recursive: true });
+for (const a of readdirSync(join(GAPKEEP, "apps"))) {
+  if (a !== "launcher") cpSync(join(GAPKEEP, "apps", a), join(card, "apps", a), { recursive: true });
 }
-const run = spawnSync("python3", ["tools/qemu_harness.py", "--sim", "sim/build/zgsim", "--card", card, "--out", OUTDIR, file],
-  { cwd: ZEROGAP, encoding: "utf8", maxBuffer: 1 << 28 });
+const run = spawnSync("python3", ["tools/qemu_harness.py", "--sim", "sim/build/gksim", "--card", card, "--out", OUTDIR, file],
+  { cwd: GAPKEEP, encoding: "utf8", maxBuffer: 1 << 28 });
 rmSync(card, { recursive: true, force: true });
 const log = run.stdout + run.stderr;
 writeFileSync(join(OUTDIR, "attacks.log"), log);
@@ -241,5 +241,5 @@ cases.forEach((c, i) => {
   for (const b of bad) console.log(`      ${b}`);
 });
 console.log(`${cases.length} cases, ${failed} failed. Output in ${OUTDIR}`);
-console.log(`commit of the signer: ${spawnSync("git", ["-C", ZEROGAP, "rev-parse", "--short", "HEAD"], { encoding: "utf8" }).stdout.trim()}`);
+console.log(`commit of the signer: ${spawnSync("git", ["-C", GAPKEEP, "rev-parse", "--short", "HEAD"], { encoding: "utf8" }).stdout.trim()}`);
 process.exit(failed ? 1 : 0);

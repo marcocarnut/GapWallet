@@ -1,5 +1,5 @@
 // E1: what the scripts here share (docs/E1.md). The real page in Chromium, the real
-// signer app in zerogap's simulator, and only QR codes between them. A code is read
+// signer app in GapKeep's simulator, and only QR codes between them. A code is read
 // off the page's canvas into the simulator's synthetic camera; the answer is read off
 // a screenshot of the simulator and pasted into the page.
 //
@@ -27,10 +27,10 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import puppeteer from "puppeteer-core";
-import { ZEROGAP, loadSigner } from "../helpers.mjs";
+import { GAPKEEP, loadSigner } from "../helpers.mjs";
 import { decodeFrame } from "../../src/qr.js";
-import { base58CheckEncode } from "../../vendor/zerogap/psbt/basen.js";
-import { serializeXpub, parseXpub } from "../../vendor/zerogap/bip32.js";
+import { base58CheckEncode } from "../../vendor/gapkeep/psbt/basen.js";
+import { serializeXpub, parseXpub } from "../../vendor/gapkeep/bip32.js";
 import { DESCRIPTORS, FINGERPRINT, SERVER } from "./wallet.mjs";
 
 export const WORDS = process.env.E1_WORDS;
@@ -53,8 +53,8 @@ mkdirSync(OUT, { recursive: true });
 export const card = mkdtempSync(join(tmpdir(), "gapwallet-card-"));
 process.on("exit", () => rmSync(card, { recursive: true, force: true }));
 mkdirSync(join(card, "apps"));
-for (const a of readdirSync(join(ZEROGAP, "apps"))) {
-  if (a !== "launcher") cpSync(join(ZEROGAP, "apps", a), join(card, "apps", a), { recursive: true });
+for (const a of readdirSync(join(GAPKEEP, "apps"))) {
+  if (a !== "launcher") cpSync(join(GAPKEEP, "apps", a), join(card, "apps", a), { recursive: true });
 }
 
 // --- the signer ------------------------------------------------------------
@@ -70,8 +70,8 @@ export function sim(name, lines) {
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir);
   // cat: Node's stdin is a socket, which /dev/stdin can't open
-  const run = spawnSync("sh", ["-c", 'cat | python3 tools/qemu_harness.py --sim sim/build/zgsim --card "$1" --out "$2" /dev/stdin', "sh", card, dir],
-    { cwd: ZEROGAP, encoding: "utf8", maxBuffer: 1 << 28, input: `${[...BOOT, ...lines].join("\n")}\n` });
+  const run = spawnSync("sh", ["-c", 'cat | python3 tools/qemu_harness.py --sim sim/build/gksim --card "$1" --out "$2" /dev/stdin', "sh", card, dir],
+    { cwd: GAPKEEP, encoding: "utf8", maxBuffer: 1 << 28, input: `${[...BOOT, ...lines].join("\n")}\n` });
   const log = run.stdout + run.stderr;
   nothingSecret(log, "the simulator's output");
   if (existsSync(join(dir, "serial.log"))) nothingSecret(readFileSync(join(dir, "serial.log"), "utf8"), "the serial log");

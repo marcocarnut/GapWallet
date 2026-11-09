@@ -8,8 +8,8 @@ import { readFileSync } from "node:fs";
 import "./helpers.mjs";
 import { Esplora, EsploraError, GENESIS } from "../src/esplora.js";
 import { historyItem } from "../src/scan.js";
-import { fromHex } from "../vendor/zerogap/psbt/bytes.js";
-import { parseTx, txid as txidOf } from "../vendor/zerogap/psbt/tx.js";
+import { fromHex } from "../vendor/gapkeep/psbt/bytes.js";
+import { parseTx, txid as txidOf } from "../vendor/gapkeep/psbt/tx.js";
 
 for (const network of ["signet", "testnet4"]) {
   const f = JSON.parse(readFileSync(new URL(`./fixtures/${network}.json`, import.meta.url), "utf8"));
