@@ -10,13 +10,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import "./helpers.mjs";
-import { Joiner, split, partCapacity, isBBQr } from "../vendor/zerogap/bbqr.js";
+import { Joiner, split, partCapacity, isBBQr } from "../vendor/gapkeep/bbqr.js";
 import { KeyReader, SignedReader, readFile } from "../src/signed.js";
 import { makeQr, decodeFrame } from "../src/qr.js";
-import { toHex } from "../vendor/zerogap/psbt/bytes.js";
-import { base43Encode } from "../vendor/zerogap/psbt/basen.js";
-import { serializeTx, txid as txidOf } from "../vendor/zerogap/psbt/tx.js";
-import { MAGIC } from "../vendor/zerogap/psbt/psbt.js";
+import { toHex } from "../vendor/gapkeep/psbt/bytes.js";
+import { base43Encode } from "../vendor/gapkeep/psbt/basen.js";
+import { serializeTx, txid as txidOf } from "../vendor/gapkeep/psbt/tx.js";
+import { MAGIC } from "../vendor/gapkeep/psbt/psbt.js";
 
 const scan = readFileSync(new URL("./fixtures/bbqr-real-scan.txt", import.meta.url), "utf8").split("\n").filter((l) => l.trim());
 

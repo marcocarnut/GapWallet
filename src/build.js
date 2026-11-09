@@ -10,10 +10,10 @@
 import { addressAt } from "./account.js";
 import { NETWORK_INFO } from "./descriptor.js";
 import { MIN_RATE, MAX_RATE, DUST, KINDS, SelectError, selectCoins } from "./coinselect.js";
-import { concat, fromHex, fromHexReversed, toHex, equal, Writer, DecodeError } from "../vendor/zerogap/psbt/bytes.js";
-import { addressToScript, classify } from "../vendor/zerogap/psbt/script.js";
-import { parseTx, serializeTx, txid as txidOf } from "../vendor/zerogap/psbt/tx.js";
-import { parsePsbt, serializePsbt, setEntry, GLOBAL, IN, OUT } from "../vendor/zerogap/psbt/psbt.js";
+import { concat, fromHex, fromHexReversed, toHex, equal, Writer, DecodeError } from "../vendor/gapkeep/psbt/bytes.js";
+import { addressToScript, classify } from "../vendor/gapkeep/psbt/script.js";
+import { parseTx, serializeTx, txid as txidOf } from "../vendor/gapkeep/psbt/tx.js";
+import { parsePsbt, serializePsbt, setEntry, GLOBAL, IN, OUT } from "../vendor/gapkeep/psbt/psbt.js";
 import { tr } from "./i18n.js";
 
 export const SEQUENCE_RBF = 0xfffffffd;

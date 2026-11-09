@@ -12,7 +12,7 @@
 // like, before anything else reads them, and an error never repeats its input.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-import { HARDENED, parseXpub, serializeXpub, versionFor, Bip32Error } from "../vendor/zerogap/bip32.js";
+import { HARDENED, parseXpub, serializeXpub, versionFor, Bip32Error } from "../vendor/gapkeep/bip32.js";
 import { tr } from "./i18n.js";
 
 export class ImportError extends Error {

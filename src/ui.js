@@ -16,11 +16,11 @@ import { LANGUAGES, formatCents, formatDate, formatDecimal, language, plural, se
 import { save } from "./store.js";
 import { LabelError, MAX_FILE as MAX_LABEL_FILE, MAX_LABEL, clean, exportLabels, importLabels, labelsOf, ownAddresses, saveLabels } from "./labels.js";
 import { CURRENCIES, PRICE_DEFAULTS, PriceError, fetchPrice, parsePriceUrl, valueInCents } from "./price.js";
-import { toBase64 } from "../vendor/zerogap/psbt/bytes.js";
-import { electrumQrText } from "../vendor/zerogap/psbt/transport.js";
-import { BBQrError, split } from "../vendor/zerogap/bbqr.js";
-import { DecodeError } from "../vendor/zerogap/psbt/bytes.js";
-import { scriptToAddress } from "../vendor/zerogap/psbt/script.js";
+import { toBase64 } from "../vendor/gapkeep/psbt/bytes.js";
+import { electrumQrText } from "../vendor/gapkeep/psbt/transport.js";
+import { BBQrError, split } from "../vendor/gapkeep/bbqr.js";
+import { DecodeError } from "../vendor/gapkeep/psbt/bytes.js";
+import { scriptToAddress } from "../vendor/gapkeep/psbt/script.js";
 
 const btc = (sats) => `${formatBtc(sats)} BTC`;
 const shortId = (id) => `${id.slice(0, 10)}…${id.slice(-6)}`;
@@ -628,8 +628,8 @@ export class App {
     const parts = [h("h2", {}, tr("Sign it Externally")),
       h("p", { id: "sign-externally" }, tr("This wallet is designed to be used with external signing apps — below you can export the prepared transaction in various formats to the signing app of your choice.")),
       h("p", { class: "small dim", id: "psbt-size" }, tr("PSBT: {n} bytes", { n: bytes.length })),
-      choose("base43", tr("One code (Base43: Electrum, and ZeroGap's signer)"), !single),
-      choose("bbqr", tr("BBQr: a series of codes (ZeroGap's signer, Coldcard, Sparrow)"), false)];
+      choose("base43", tr("One code (Base43: Electrum, and GapKeep's signer)"), !single),
+      choose("bbqr", tr("BBQr: a series of codes (GapKeep's signer, Coldcard, Sparrow)"), false)];
     if (!single) parts.push(notice("warn", tr("This PSBT doesn't fit in one QR code: {n} characters, {max} at most. It goes out as a series. Electrum doesn't read those: for Electrum, save the PSBT as a file.", { n: text.length, max: MAX_ALPHANUMERIC })));
     if (format === "base43") {
       const canvas = h("canvas", { class: "code", id: "psbt-qr" });

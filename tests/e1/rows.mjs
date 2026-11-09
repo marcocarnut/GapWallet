@@ -7,7 +7,7 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import { readFileSync, readdirSync } from "node:fs";
-import { parseXpub, serializeXpub } from "../../vendor/zerogap/bip32.js";
+import { parseXpub, serializeXpub } from "../../vendor/gapkeep/bip32.js";
 import { DESCRIPTORS } from "./wallet.mjs";
 import { BUILT, OUT, WRONG_FINGERPRINT, attempt, browser, buildRow, fine, loadWif, loadWords, master, nothingSecret, oneCode, openAccount, pageFee, posts, proxy, read, readBack, readShot, record, results, s, seriesCodes, server, showCodes, signAndReadBack, signAndShow, signerSays, sim, upstream, wifAt } from "./harness.mjs";
 

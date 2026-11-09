@@ -7,17 +7,17 @@ import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { installCrypto } from "../src/crypto.js";
-import { fromHex, fromHexReversed, toHex } from "../vendor/zerogap/psbt/bytes.js";
-import { serializeTx, txid as txidOf } from "../vendor/zerogap/psbt/tx.js";
+import { fromHex, fromHexReversed, toHex } from "../vendor/gapkeep/psbt/bytes.js";
+import { serializeTx, txid as txidOf } from "../vendor/gapkeep/psbt/tx.js";
 import { GENESIS } from "../src/esplora.js";
-import { addressToScript, scriptToAddress } from "../vendor/zerogap/psbt/script.js";
+import { addressToScript, scriptToAddress } from "../vendor/gapkeep/psbt/script.js";
 
 installCrypto();
 globalThis.crypto ??= webcrypto; // Node 18
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-export const ZEROGAP = resolve(process.env.ZEROGAP_DIR || join(HERE, "..", "..", "lvglzero"));
-export const haveSigner = existsSync(join(ZEROGAP, "apps/signer/lib/sign.js"));
+export const GAPKEEP = resolve(process.env.GAPKEEP_DIR || join(HERE, "..", "..", "lvglzero"));
+export const haveSigner = existsSync(join(GAPKEEP, "apps/signer/lib/sign.js"));
 
 // BIP-84's vectors' wallet, public from its first day.
 export const MNEMONIC = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
@@ -26,7 +26,7 @@ export const ZPUB0 = "zpub6rFR7y4Q2AijBEqTUquhVz398htDFrtymD9xYYfG1m4wAcvPhXNfE3
 
 // The signer's own libraries, under Node, with its reference cryptography.
 export async function loadSigner() {
-  const url = (p) => pathToFileURL(join(ZEROGAP, p)).href;
+  const url = (p) => pathToFileURL(join(GAPKEEP, p)).href;
   const ref = await import(url("tests/signer/crypto_ref.mjs"));
   const { setCrypto } = await import(url("apps/signer/lib/crypto.js"));
   setCrypto(ref);

@@ -7,15 +7,15 @@ vendor/ is edited by hand. vendor/MANIFEST.json says where each came from,
 with its SHA-256.
 
 Sources:
-  - zerogap's Bitcoin libraries, from a pinned commit of the zerogap
-    repository (ZEROGAP_DIR, default ../lvglzero), as tools/share_libs.py
+  - GapKeep's Bitcoin libraries, from a pinned commit of the GapKeep
+    repository (GAPKEEP_DIR, default ../lvglzero), as tools/share_libs.py
     shares them between its apps;
   - npm packages, by version and the registry's sha512 integrity.
 
 Usage:
   tools/vendor.py           fetch everything and rewrite the manifest
   tools/vendor.py --check   exit 1 if a file differs from the manifest; also
-                            compares with the zerogap commit, if that
+                            compares with the GapKeep commit, if that
                             repository is here
 """
 import base64
@@ -29,16 +29,17 @@ import tarfile
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ZEROGAP = os.environ.get("ZEROGAP_DIR", os.path.join(ROOT, "..", "lvglzero"))
+GAPKEEP = os.environ.get("GAPKEEP_DIR", os.path.join(ROOT, "..", "lvglzero"))
 CACHE = os.path.join(ROOT, ".cache")
 
 # Main at this commit.
-ZEROGAP_COMMIT = "8cbf6eb"
+GAPKEEP_COMMIT = "0511ff8"
 PSBT_HOME = "apps/signer/lib/psbt/"
-ZEROGAP_FILES = [("apps/signer/lib/bip32.js", "zerogap/bip32.js"),
-                 ("apps/signer/lib/crypto.js", "zerogap/crypto.js"),
-                 ("lib/js/bbqr.js", "zerogap/bbqr.js")] + [
-    (PSBT_HOME + f, "zerogap/psbt/" + f)
+GAPKEEP_FILES = [("apps/signer/lib/bip32.js", "gapkeep/bip32.js"),
+                 ("apps/signer/lib/crypto.js", "gapkeep/crypto.js"),
+                 ("apps/signer/lib/text.js", "gapkeep/text.js"),
+                 ("lib/js/bbqr.js", "gapkeep/bbqr.js")] + [
+    (PSBT_HOME + f, "gapkeep/psbt/" + f)
     for f in ("basen.js", "bech32.js", "bytes.js", "hashes.js", "psbt.js", "script.js", "transport.js", "tx.js")]
 
 NPM = [
@@ -63,7 +64,7 @@ def sha256(data):
 
 
 def git_show(commit, path):
-    return subprocess.run(["git", "-C", ZEROGAP, "show", "%s:%s" % (commit, path)],
+    return subprocess.run(["git", "-C", GAPKEEP, "show", "%s:%s" % (commit, path)],
                           check=True, capture_output=True).stdout
 
 
@@ -94,10 +95,10 @@ def fetch():
             f.write(data)
         entries.append(dict(file=target, sha256=sha256(data), **source))
 
-    commit = subprocess.run(["git", "-C", ZEROGAP, "rev-parse", ZEROGAP_COMMIT], check=True,
+    commit = subprocess.run(["git", "-C", GAPKEEP, "rev-parse", GAPKEEP_COMMIT], check=True,
                             capture_output=True, text=True).stdout.strip()
-    for path, target in ZEROGAP_FILES:
-        put(target, git_show(commit, path), {"from": "zerogap", "commit": commit, "path": path,
+    for path, target in GAPKEEP_FILES:
+        put(target, git_show(commit, path), {"from": "gapkeep", "commit": commit, "path": path,
                                              "license": "GPL-3.0-or-later"})
     for pkg in NPM:
         with tarfile.open(fileobj=io.BytesIO(tarball(pkg)), mode="r:gz") as tf:
@@ -115,14 +116,14 @@ def check():
     with open(os.path.join(ROOT, "vendor", "MANIFEST.json")) as f:
         entries = json.load(f)
     bad = 0
-    have_git = os.path.isdir(os.path.join(ZEROGAP, ".git")) or os.path.isfile(os.path.join(ZEROGAP, ".git"))
+    have_git = os.path.isdir(os.path.join(GAPKEEP, ".git")) or os.path.isfile(os.path.join(GAPKEEP, ".git"))
     for e in entries:
         data = open(os.path.join(ROOT, "vendor", e["file"]), "rb").read()
         if sha256(data) != e["sha256"]:
             print("differs from the manifest: " + e["file"])
             bad += 1
-        if e["from"] == "zerogap" and have_git and git_show(e["commit"], e["path"]) != data:
-            print("differs from zerogap %s: %s" % (e["commit"][:7], e["file"]))
+        if e["from"] == "gapkeep" and have_git and git_show(e["commit"], e["path"]) != data:
+            print("differs from GapKeep %s: %s" % (e["commit"][:7], e["file"]))
             bad += 1
     listed = {e["file"] for e in entries} | {"MANIFEST.json"}
     for folder, _, names in os.walk(os.path.join(ROOT, "vendor")):
@@ -133,7 +134,7 @@ def check():
                 bad += 1
     if bad:
         return 1
-    print("%d vendored files check out%s" % (len(entries), "" if have_git else " (zerogap repository not here)"))
+    print("%d vendored files check out%s" % (len(entries), "" if have_git else " (GapKeep repository not here)"))
     return 0
 
 

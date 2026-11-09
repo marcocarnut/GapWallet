@@ -3,7 +3,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { Chain, ZPUB0, MASTER_FINGERPRINT, ZEROGAP, haveSigner, loadSigner } from "./helpers.mjs";
+import { Chain, ZPUB0, MASTER_FINGERPRINT, GAPKEEP, haveSigner, loadSigner } from "./helpers.mjs";
 import { parseAccount, accountDescriptor, accountSlip132, descriptorChecksum, ImportError } from "../src/descriptor.js";
 import { addressAt } from "../src/account.js";
 import { Esplora, EsploraError, OWN_INTERVAL_MS, PRESETS, PUBLIC_INTERVAL_MS, parseServer } from "../src/esplora.js";
@@ -12,12 +12,12 @@ import { cleanEstimates, selectCoins, vsizeOf, feeFor, feeWarnings, KINDS, MIN_R
 import { buildSpend, psbtBytes, BuildError, SEQUENCE_RBF } from "../src/build.js";
 import { SignedReader, readSigned } from "../src/signed.js";
 import { makeQr } from "../src/qr.js";
-import { toHex, fromHex } from "../vendor/zerogap/psbt/bytes.js";
-import { parsePsbt } from "../vendor/zerogap/psbt/psbt.js";
-import { serializeXpub, parseXpub } from "../vendor/zerogap/bip32.js";
-import { electrumQrText } from "../vendor/zerogap/psbt/transport.js";
-import { split } from "../vendor/zerogap/bbqr.js";
-import { parseTx, serializeTx, txid as txidOf } from "../vendor/zerogap/psbt/tx.js";
+import { toHex, fromHex } from "../vendor/gapkeep/psbt/bytes.js";
+import { parsePsbt } from "../vendor/gapkeep/psbt/psbt.js";
+import { serializeXpub, parseXpub } from "../vendor/gapkeep/bip32.js";
+import { electrumQrText } from "../vendor/gapkeep/psbt/transport.js";
+import { split } from "../vendor/gapkeep/bbqr.js";
+import { parseTx, serializeTx, txid as txidOf } from "../vendor/gapkeep/psbt/tx.js";
 
 // A client on a clock of its own: sleeping takes no real time.
 function client(chain, opts) {
@@ -46,7 +46,7 @@ test("BIP-380 checksum", () => {
 });
 
 test("BIP-84 addresses from the zpub", () => {
-  const V = JSON.parse(readFileSync(`${ZEROGAP}/tests/signer/vectors.json`, "utf8")).bip84;
+  const V = JSON.parse(readFileSync(`${GAPKEEP}/tests/signer/vectors.json`, "utf8")).bip84;
   const a = mainAccount();
   assert.equal(a.account, 0);
   for (const v of V.addresses) {
@@ -431,12 +431,12 @@ test("the signed code: same transaction or not", async () => {
 });
 
 test("the private-key functions aren't there", async () => {
-  const { cr } = await import("../vendor/zerogap/crypto.js");
+  const { cr } = await import("../vendor/gapkeep/crypto.js");
   assert.throws(() => cr().ecdsaSign(new Uint8Array(32), new Uint8Array(32)), /watch-only/);
   assert.throws(() => cr().privateKeyTweakAdd(new Uint8Array(32), new Uint8Array(32)), /watch-only/);
 });
 
-test("the real signer signs what the wallet builds", { skip: !haveSigner && "no zerogap repository" }, async () => {
+test("the real signer signs what the wallet builds", { skip: !haveSigner && "no GapKeep repository" }, async () => {
   const { s, account } = await signetAccount();
   const chain = new Chain("signet");
   chain.fund(addressAt(account, 0, 0).address, 60000);
@@ -473,7 +473,7 @@ test("the real signer signs what the wallet builds", { skip: !haveSigner && "no 
   assert.equal(chain.broadcasts[0], toHex(done.tx));
 });
 
-test("a change output that isn't really ours would be caught by the signer", { skip: !haveSigner && "no zerogap repository" }, async () => {
+test("a change output that isn't really ours would be caught by the signer", { skip: !haveSigner && "no GapKeep repository" }, async () => {
   const { s, account } = await signetAccount();
   const { scan, c } = await funded([100000], account);
   const spend = await buildSpend(account, scan, { address: PAYEE, amount: 20000, rate: 2 }, c);
@@ -506,7 +506,7 @@ async function nestedAccount() {
 }
 
 test("BIP-49 address from the upub", () => {
-  const V = JSON.parse(readFileSync(`${ZEROGAP}/tests/signer/vectors.json`, "utf8")).bip49;
+  const V = JSON.parse(readFileSync(`${GAPKEEP}/tests/signer/vectors.json`, "utf8")).bip49;
   const a = parseAccount(V.xpub, "signet", MASTER_FINGERPRINT);
   assert.equal(a.script, "p2sh-p2wpkh");
   assert.equal(a.purpose, 49);
@@ -519,7 +519,7 @@ test("BIP-49 address from the upub", () => {
 });
 
 test("nested descriptor round trip", () => {
-  const V = JSON.parse(readFileSync(`${ZEROGAP}/tests/signer/vectors.json`, "utf8")).bip49;
+  const V = JSON.parse(readFileSync(`${GAPKEEP}/tests/signer/vectors.json`, "utf8")).bip49;
   const a = parseAccount(V.xpub, "signet", MASTER_FINGERPRINT);
   const d = accountDescriptor(a);
   assert.match(d, /^sh\(wpkh\(\[73c5da0a\/49h\/1h\/0h\]tpub.*\/<0;1>\/\*\)\)#[a-z0-9]{8}$/);
@@ -544,7 +544,7 @@ test("sizes of nested inputs", () => {
   assert.equal(near.change, 0);
 });
 
-test("nested segwit through the real signer", { skip: !haveSigner && "no zerogap repository" }, async () => {
+test("nested segwit through the real signer", { skip: !haveSigner && "no GapKeep repository" }, async () => {
   const { s, account } = await nestedAccount();
   const chain = new Chain("signet");
   chain.fund(addressAt(account, 0, 0).address, 60000);
@@ -577,7 +577,7 @@ test("nested segwit through the real signer", { skip: !haveSigner && "no zerogap
   assert.equal(readSigned(electrumQrText(bytes), null, spend).matches, true); // the unsigned PSBT is recognised too
 });
 
-test("a nested transaction with another scriptSig isn't the one built", { skip: !haveSigner && "no zerogap repository" }, async () => {
+test("a nested transaction with another scriptSig isn't the one built", { skip: !haveSigner && "no GapKeep repository" }, async () => {
   const { s, account } = await nestedAccount();
   const chain = new Chain("signet");
   chain.fund(addressAt(account, 0, 0).address, 60000);
@@ -595,7 +595,7 @@ test("a nested transaction with another scriptSig isn't the one built", { skip: 
 });
 
 // S2: the signer's own reader and its own output, not this page's idea of them.
-test("a series through the real signer, there and back, in any order", { skip: !haveSigner && "no zerogap repository", timeout: 60000 }, async () => {
+test("a series through the real signer, there and back, in any order", { skip: !haveSigner && "no GapKeep repository", timeout: 60000 }, async () => {
   const { s, account } = await signetAccount();
   const { scan, c } = await funded(Array.from({ length: 80 }, () => 20000), account);
   const spend = await buildSpend(account, scan, { address: PAYEE, sendAll: true, rate: 1 }, c);

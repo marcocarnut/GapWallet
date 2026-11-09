@@ -9,7 +9,7 @@ import { addressAt } from "../src/account.js";
 import { parseAccount } from "../src/descriptor.js";
 import { LabelError, MAX_LABEL, exportLabels, importLabels, labelsOf, originOf, ownAddresses } from "../src/labels.js";
 
-const skip = !haveSigner ? "needs the ZeroGap repository" : false;
+const skip = !haveSigner ? "needs the GapKeep repository" : false;
 const TXID = "a".repeat(64);
 const OTHER_TXID = "b".repeat(64);
 
