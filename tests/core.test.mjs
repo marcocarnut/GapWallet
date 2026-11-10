@@ -190,7 +190,7 @@ test("requests are paced from the start, and a failure holds them all", async ()
   await run(() => c.tipHeight());
   assert.ok(starts.at(-1) - before >= 5000);
   assert.equal(c.interval, OWN_INTERVAL_MS * 2);
-  for (const pub of [PRESETS.signet, "https://blockstream.info/signet/api", "https://esplora.example.com", "http://172.32.0.1", "http://192.169.1.1"]) {
+  for (const pub of [...PRESETS.signet, ...PRESETS.mainnet, ...PRESETS.testnet4, "https://esplora.example.com", "http://172.32.0.1", "http://192.169.1.1"]) {
     assert.equal(new Esplora(pub).interval, PUBLIC_INTERVAL_MS, pub);
   }
   for (const own of ["http://192.168.1.5:3002", "http://localhost:3002", "http://127.0.0.1:3002", "http://10.1.2.3", "http://172.16.0.1", "http://nas.local:3002", "http://[::1]:3002"]) {
@@ -328,7 +328,7 @@ async function funded(values = [100000], account = testAccount()) {
 }
 const PAYEE = "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx";
 
-test("a PSBT holds what BITCOIN.md asks for", async () => {
+test("a PSBT holds what the signer needs", async () => {
   const { account, scan, c, chain } = await funded([100000]);
   const spend = await buildSpend(account, scan, { address: PAYEE, amount: 20000, rate: 2 }, c, { random: fixed });
   const psbt = parsePsbt(psbtBytes(account, spend));
@@ -594,7 +594,7 @@ test("a nested transaction with another scriptSig isn't the one built", { skip: 
   assert.throws(() => readSigned(toHex(serializeTx(tx)), null, spend), /isn't signed/);
 });
 
-// S2: the signer's own reader and its own output, not this page's idea of them.
+// The signer's own reader and its own output, not this page's idea of them.
 test("a series through the real signer, there and back, in any order", { skip: !haveSigner && "no GapKeep repository", timeout: 60000 }, async () => {
   const { s, account } = await signetAccount();
   const { scan, c } = await funded(Array.from({ length: 80 }, () => 20000), account);

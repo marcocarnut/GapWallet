@@ -1,7 +1,7 @@
-# W0: the Esplora client
+# The Esplora client
 
-GapWallet is the online half of the GapKeep pipeline (`docs/plans/BITCOIN.md`
-in the GapKeep repository). It holds public keys only: it watches an account,
+GapWallet is the online half of [GapKeep](https://github.com/marcocarnut/GapKeep)'s
+Bitcoin signer. It holds public keys only: it watches an account,
 builds PSBTs and broadcasts what the offline signer signed. This file says
 how it talks to a server. It is written before the code; a later indexer needs
 to serve exactly what is in "Endpoints", with the same shapes.
@@ -15,11 +15,13 @@ to serve exactly what is in "Endpoints", with the same shapes.
 | testnet4 | `1h` | vpub, upub, tpub | `tb1…`, `2…` | `00000000da84f2bafbbc53dee25a72ae507ff4914b867c565be350b0da8bf043` |
 
 - **No default server.** The page contacts nothing until the user has chosen a
-  server for the account's network. mempool.space's addresses are offered as
-  presets, each one a click the user makes, next to what the server will learn
-  ("Privacy"):
-  `https://mempool.space/api`, `https://mempool.space/signet/api`,
-  `https://mempool.space/testnet4/api`. Any other Esplora URL can be typed.
+  server for the account's network. Public servers are offered as presets,
+  each one a click the user makes, next to what the server will learn
+  ("Privacy"): blockstream.info (`https://blockstream.info/api`,
+  `https://blockstream.info/signet/api`) and mempool.space
+  (`https://mempool.space/api`, `https://mempool.space/signet/api`,
+  `https://mempool.space/testnet4/api`). Any other Esplora URL can be typed:
+  your own server is the private choice.
 - **The first request checks the network.** `GET /block-height/0` must give
   that network's genesis hash, or the server is refused. Signet and testnet4
   share their addresses and keys, so nothing else would tell them apart.
@@ -82,7 +84,7 @@ be assumed.
 about 20 requests in 3 seconds gets a `429` from its nginx, with no CORS header
 and no `Retry-After`. Even 3 to 5 requests a second got some, and a run of
 connection timeouts of about 10 s each; after the last of those bursts the
-server stopped accepting connections from this machine for a while, while
+server stopped accepting connections from the measuring machine for a while, while
 blockstream.info still answered. (Probably a temporary block, not established:
 a local tunnel was also flapping.) Going over costs far more than going
 slowly. The browser hides an answer without that header, so the page sees a
@@ -199,7 +201,7 @@ Selection is deterministic for the same coins, amount and rate.
 
 ### The PSBT
 
-The contract is "PSBTs" in BITCOIN.md. Version 0, for P2WPKH and P2SH-P2WPKH
+What GapKeep's signer expects. Version 0, for P2WPKH and P2SH-P2WPKH
 accounts (`sh(wpkh(…))`, purpose 49, ypub or upub):
 
 - `PSBT_GLOBAL_UNSIGNED_TX`;
@@ -238,7 +240,7 @@ than it shows (the fee attack on segwit v0).
   doesn't shrink it, every code the same QR version at error correction L.
   The page picks the fewest codes whose version is at most 12; the user can
   change the number of codes and the speed (500 ms per code to start with).
-  Those defaults want tuning on the rig (B2).
+  Those defaults were checked with a Pi Zero's camera reading a screen.
 - **In:** the camera or a paste: hex, Base64 or Base43 in one code, or BBQr of
   type `T` or `P`, one code or a series, in any order, each as often as it
   comes round. BBQr's text is also Base43's, so `B$…` is BBQr unless it reads
@@ -333,6 +335,6 @@ the balance, nothing more.
 - **The page:** headless Chromium against the stub: first run, import,
   scan, build, a signed code through a fake camera feed, broadcast; and a check
   that the page makes no request except to the chosen server.
-- **By hand, end to end (E1):** on signet or testnet4 through mempool.space,
-  with the signer in the simulator. No regtest for now: it needs bitcoind on
-  this machine, which is the user's call.
+- **By hand, end to end (E1):** on signet through blockstream.info, with the
+  signer in GapKeep's simulator (`docs/E1.md`). No regtest for now: it needs
+  bitcoind and an indexer.

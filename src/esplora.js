@@ -11,10 +11,11 @@ export const GENESIS = {
   testnet4: "00000000da84f2bafbbc53dee25a72ae507ff4914b867c565be350b0da8bf043",
 };
 
+// Public servers offered as one click each, never chosen for the user
 export const PRESETS = {
-  mainnet: "https://mempool.space/api",
-  signet: "https://mempool.space/signet/api",
-  testnet4: "https://mempool.space/testnet4/api",
+  mainnet: ["https://blockstream.info/api", "https://mempool.space/api"],
+  signet: ["https://blockstream.info/signet/api", "https://mempool.space/signet/api"],
+  testnet4: ["https://mempool.space/testnet4/api"],
 };
 
 const MAX_CONCURRENT = 4, TIMEOUT_MS = 20000, RETRIES = 6;

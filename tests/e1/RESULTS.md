@@ -6,7 +6,7 @@ use the E1 test wallet, whose words are in no file.
 
 ## Part 1, the attacks
 
-2026-11-07 07:40 -03. GapWallet e1-wallet (on 0e4ee8f) with `tests/e1/attacks.mjs`, signer ZeroGap
+2026-11-07 07:40 -03. GapWallet e1-wallet (on 0e4ee8f) with `tests/e1/attacks.mjs`, signer GapKeep
 f1973eb, in the simulator at its default 640x480, PSBTs read by its synthetic
 camera as Base43. Each case was run on both accounts, `84h/1h/0h` and `49h/1h/0h`:
 22 cases, 0 failed. Two inputs (60000 and 70000 sat, at indexes 0 and 1, so "top"
@@ -32,15 +32,15 @@ the signer's log, compared by the script.
 
 The first run (13f3bc8, 18 cases) showed the signer green up to 1000 past the
 inputs, beyond what a wallet's scan reaches: GapWallet at its maximum gap of 1000
-doesn't show a coin at index 1000 or above with nothing used before it. S3b's far
-note is the answer: the signer can't know how far a wallet scans, so it says so at
+doesn't show a coin at index 1000 or above with nothing used before it. The signer's far
+note (added since) is the answer: the signer can't know how far a wallet scans, so it says so at
 the moment of signing. The wallet's maximum gap stays at 1000, so a coin the signer
 called far at index 1000 or 1001 is still out of the page's reach in that case.
 
 ## Part 1, the test wallet
 
 Final pass, finished 2026-11-07 08:02 -03. GapWallet e1-wallet (on 47fd94d), `gapwallet.html`
-unchanged from main, signer ZeroGap f1973eb, simulator at 640x480. `tests/e1/rows.mjs`
+unchanged from main, signer GapKeep f1973eb, simulator at 640x480. `tests/e1/rows.mjs`
 drives the real page in Chromium; each code is read off its canvas into the
 simulator's synthetic camera, and the signer's answer off a screenshot, then pasted
 into the page. No physical camera. 22 cases, 0 failed, 0 POSTs. The fingerprint row's
@@ -65,7 +65,7 @@ equals the signer's, before and after the keys.
 | Wrong master fingerprint on import | Sign disabled, "key 7d8108a9 signs 0", change counted as sent, input refused: "its key is from another wallet (fingerprint deadbeef; this wallet is 7d8108a9)". |
 
 Needs funding: a series of 15 codes. These coins give at most 8 (`84h`, 3 inputs), as
-"up to 16" shows; it takes more inputs. ZeroGap's own suite reads 14 and 17 parts
+"up to 16" shows; it takes more inputs. GapKeep's own suite reads 14 and 17 parts
 through its Joiner and a 30-input series in, but that isn't this page. Likewise the
 signer's answer needing a series: here it was asked for by the button.
 
@@ -76,17 +76,17 @@ Seen on the way, nothing wrong:
 - The signer's BBQr answer for a 222-byte transaction is 3 codes at version 5.
 
 Earlier passes that day, commit unknown (lvglzero moved during them), aren't evidence.
-They also got this machine a 429 from blockstream.info: about five full passes in half
+They also got the test machine a 429 from blockstream.info: about five full passes in half
 an hour, each rescanning. That's why the script now reads through a cache: the final
 pass made 103 reads, one every 2 s, and no 429.
 
 ## Part 3, on signet, in the simulator
 
-2026-11-07, 10:41 to 11:38 -03. GapWallet e1-spend (on 338728b), signer ZeroGap main
+2026-11-07, 10:41 to 11:38 -03. GapWallet e1-spend (on 338728b), signer GapKeep main
 4f6c454 in the simulator at 640x480, `tests/e1/spend.mjs`. The real page in Chromium,
 QR codes only between it and the signer, and the page's own Broadcast button, which
-reached blockstream.info's signet through the script's proxy. The go-ahead was the
-user's. Rate 1 sat/vB, gap limit 5 to spare the server's
+reached blockstream.info's signet through the script's proxy. Each broadcast had a
+person's go-ahead. Rate 1 sat/vB, gap limit 5 to spare the server's
 reads. 7 rows, 0 failed, no 429.
 
 | Account, form | Transaction | Inputs | Amount, fee (sat) | Change |

@@ -1,5 +1,5 @@
 // The languages: every key translated, and amounts that no language can turn
-// into other amounts (BITCOIN.md, W4).
+// into other amounts.
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 import test from "node:test";

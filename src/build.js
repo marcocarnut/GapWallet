@@ -1,4 +1,4 @@
-// Builds the transaction and its PSBT (BITCOIN.md, "PSBTs"; docs/ESPLORA.md).
+// Builds the transaction and its PSBT (docs/ESPLORA.md, "The PSBT").
 //
 //   buildSpend(account, scan, request, client, { random }) -> Spend
 //   psbtBytes(account, spend) -> Uint8Array
