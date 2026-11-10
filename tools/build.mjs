@@ -4,9 +4,9 @@
 //
 //   node tools/build.mjs          writes gapwallet.html
 //   node tools/build.mjs --check  exit 1 if gapwallet.html isn't what it would write
-//   node tools/build.mjs --dist   also writes dist/gapwallet/, the folder to host
+//   node tools/build.mjs --dist   also writes dist/, the site (gapwallet.org)
 //
-// dist/gapwallet/ is static and works from any path (gapkeep.org/gapwallet/):
+// dist/ is static and works from any path, the root or below it:
 // index.html is gapwallet.html, byte for byte, and has no URLs at all. Beside
 // it, LICENSE, a zip of the two for running a checked copy locally, and BUILD:
 // the commit and the SHA-256 of each file, to compare with a rebuild. The zip
@@ -208,8 +208,8 @@ function dist(html) {
   const commit = git("rev-parse", "HEAD");
   // Built from what git has at that commit, or BUILD says it isn't
   const dirty = git("status", "--porcelain", "--untracked-files=no", "--", "src", "vendor", "tools", "LICENSE") !== "";
-  const out = join(ROOT, "dist/gapwallet");
-  rmSync(join(ROOT, "dist"), { recursive: true, force: true });
+  const out = join(ROOT, "dist");
+  rmSync(out, { recursive: true, force: true });
   mkdirSync(out, { recursive: true });
   const page = Buffer.from(html, "utf8"), license = readFileSync(join(ROOT, "LICENSE"));
   const zipName = `gapwallet-${commit.slice(0, 12)}.zip`;
@@ -227,9 +227,11 @@ function dist(html) {
     `${sha256hex(license)}  LICENSE`,
     `${sha256hex(archive)}  ${zipName}`,
     "",
-    "To compare: check out the commit, run node tools/build.mjs --dist, and",
-    "compare dist/gapwallet/BUILD with this file. index.html is also the",
-    "repository's gapwallet.html at that commit, byte for byte.",
+    "To compare: clone the source, check out the commit, run",
+    "node tools/build.mjs --dist (Node 18 or later, nothing to install), and",
+    "compare dist/BUILD with this file (https://gapwallet.org/BUILD), or the",
+    "files' SHA-256 with sha256sum. index.html is also the repository's",
+    "gapwallet.html at that commit, byte for byte.",
     "",
   ].join("\n");
   writeFileSync(join(out, "BUILD"), build);

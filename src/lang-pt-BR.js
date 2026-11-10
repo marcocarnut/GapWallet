@@ -131,6 +131,7 @@ export const PT_BR = {
   // ui.js: server
   "An Esplora server answers for this {network} account. There is no default: it's your choice, because of what the server learns.": "Um servidor Esplora responde por esta conta da {network}. Não há padrão: a escolha é sua, por causa do que o servidor fica sabendo.",
   "Use {host}": "Usar {host}",
+  "GapWallet doesn't run inside another page. Open it in a tab of its own.": "O GapWallet não roda dentro de outra página. Abra-o numa aba só dele.",
   "Or your own server": "Ou o seu próprio servidor",
   "Use this server": "Usar este servidor",
   "Choose a server": "Escolha um servidor",
