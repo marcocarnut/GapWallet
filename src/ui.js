@@ -31,7 +31,7 @@ const LARGE_QR_VERSION = 25;
 const RECEIVE_LIST = 5;
 const SERIES_SIZES = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 64, 128]; // codes in a series
 const SERIES_SPEEDS = [[250, "fast"], [500, "normal"], [1000, "slow"], [2000, "very slow"]]; // ms per code; keys for tr()
-const SERIES_VERSION = 12; // the densest code a series starts with; camera-tuned on the rig (BITCOIN.md, B2)
+const SERIES_VERSION = 12; // the densest code a series starts with; checked with a Pi Zero's camera
 
 const PRIVACY = [ // keys for tr()
   ["The Esplora server", "Every address of this account, asked in a burst from one IP address and so linked together: the wallet's balance and whole history, and when you open it. Each transaction you send, before anyone else sees it, and the IP that sent it."],
@@ -251,7 +251,8 @@ export class App {
     return h("div", {},
       h("p", {}, tr("An Esplora server answers for this {network} account. There is no default: it's your choice, because of what the server learns.", { network: NETWORK_INFO[network].name })),
       privacyTable(),
-      h("div", { class: "row" }, h("button", { id: "preset", class: "primary", onclick: () => use(PRESETS[network]) }, tr("Use {host}", { host: new URL(PRESETS[network]).host }))),
+      h("div", { class: "row" }, ...PRESETS[network].map((preset, i) => h("button", { id: i ? `preset-${i + 1}` : "preset", class: i ? null : "primary", onclick: () => use(preset) },
+        tr("Use {host}", { host: new URL(preset).host })))),
       h("label", { for: "server" }, tr("Or your own server")), url, message,
       h("div", { class: "row" }, h("button", { id: "use-server", onclick: () => use(url.value) }, tr("Use this server"))));
   }

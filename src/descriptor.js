@@ -1,6 +1,6 @@
 // What the user imports: an account's public key, as a descriptor or a zpub.
 //
-//   wpkh([73c5da0a/84h/0h/0h]xpub…/<0;1>/*)#checksum      (BITCOIN.md, "Public key export")
+//   wpkh([73c5da0a/84h/0h/0h]xpub…/<0;1>/*)#checksum      (as GapKeep's signer exports it)
 //   sh(wpkh([73c5da0a/49h/0h/0h]xpub…/<0;1>/*))#checksum
 //   zpub… or ypub…  (vpub…, upub… on test networks)
 //

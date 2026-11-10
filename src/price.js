@@ -1,5 +1,5 @@
 // The price of bitcoin, for "About 1,234.56 USD" under a mainnet balance
-// (BITCOIN.md, W5). Off mainnet nothing is fetched: test coins have no value,
+// Off mainnet nothing is fetched: test coins have no value,
 // and the page says so instead.
 //
 // The page asks the quote server for the quote and nothing else: the URL is

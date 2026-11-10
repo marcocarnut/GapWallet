@@ -32,7 +32,7 @@ function psbtResult(bytes, pending) {
 
 function txResult(bytes, pending) {
   const tx = parseTx(bytes);
-  // Every input here is segwit. Legacy accounts (S3) have no witness: this has
+  // Every input here is segwit. Legacy accounts, when supported, have no witness: this has
   // to change with them.
   if (tx.inputs.some((i) => i.witness.length === 0)) {
     throw new DecodeError(tr("This transaction isn't signed yet."));

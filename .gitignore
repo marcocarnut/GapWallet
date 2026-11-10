@@ -2,3 +2,4 @@ node_modules/
 *.tgz
 .cache/
 tests/e1/.cache/
+dist/

@@ -4,6 +4,13 @@
 //
 //   node tools/build.mjs          writes gapwallet.html
 //   node tools/build.mjs --check  exit 1 if gapwallet.html isn't what it would write
+//   node tools/build.mjs --dist   also writes dist/gapwallet/, the folder to host
+//
+// dist/gapwallet/ is static and works from any path (gapkeep.org/gapwallet/):
+// index.html is gapwallet.html, byte for byte, and has no URLs at all. Beside
+// it, LICENSE, a zip of the two for running a checked copy locally, and BUILD:
+// the commit and the SHA-256 of each file, to compare with a rebuild. The zip
+// is made here, stored, with fixed dates, so it too is the same bytes each time.
 //
 // The modules (src/, vendor/) are joined as they are, unminified: each one
 // becomes a function, in the order of its imports, and imports and exports
@@ -15,7 +22,8 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { createHash } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -141,14 +149,95 @@ function page() {
   }
   const csp = ["default-src 'none'", `script-src 'sha256-${sha256b64(script)}'`, `style-src 'sha256-${sha256b64(style)}'`,
     "img-src data:", "connect-src https: http:", "base-uri 'none'", "form-action 'none'"].join("; ");
+  const manifest = JSON.parse(readFileSync(join(ROOT, "vendor/MANIFEST.json"), "utf8"));
+  const notices = manifest.filter((e) => /(^|\/)LICENSE$/.test(e.file)).map((e) => {
+    const text = readFileSync(join(ROOT, "vendor", e.file), "utf8");
+    if (/-->|--!>|<!--/.test(text)) die(`vendor/${e.file} would end the comment it goes in`);
+    return `\n======== ${e.from}: vendor/${e.file} ========\n\n${text.trimEnd()}\n`;
+  }).join("");
   const fill = (name, value) => (t) => {
     if (t.split(name).length !== 2) die(`src/index.html needs ${name} once`);
     return t.split(name).join(value);
   };
-  return [fill("%%CSP%%", csp), fill("%%STYLE%%", style), fill("%%SCRIPT%%", script)].reduce((t, f) => f(t), template);
+  return [fill("%%CSP%%", csp), fill("%%STYLE%%", style), fill("%%NOTICES%%", notices), fill("%%SCRIPT%%", script)].reduce((t, f) => f(t), template);
+}
+
+// A zip of `files` ([name, Buffer]), stored, every date 1980-01-01: the same
+// input gives the same bytes.
+const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+function crc32(buf) {
+  let c = 0xffffffff;
+  for (const b of buf) c = CRC_TABLE[(c ^ b) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+function zip(files) {
+  const DOS_DATE = (0 << 9) | (1 << 5) | 1; // 1980-01-01
+  const local = [], central = [];
+  let offset = 0;
+  for (const [name, data] of files) {
+    const n = Buffer.from(name, "utf8"), crc = crc32(data);
+    const head = Buffer.alloc(30);
+    head.writeUInt32LE(0x04034b50, 0); head.writeUInt16LE(10, 4); head.writeUInt16LE(0x0800, 6);
+    head.writeUInt16LE(0, 8); head.writeUInt16LE(0, 10); head.writeUInt16LE(DOS_DATE, 12);
+    head.writeUInt32LE(crc, 14); head.writeUInt32LE(data.length, 18); head.writeUInt32LE(data.length, 22);
+    head.writeUInt16LE(n.length, 26); head.writeUInt16LE(0, 28);
+    const dir = Buffer.alloc(46);
+    dir.writeUInt32LE(0x02014b50, 0); dir.writeUInt16LE(0x031e, 4); dir.writeUInt16LE(10, 6); dir.writeUInt16LE(0x0800, 8);
+    dir.writeUInt16LE(0, 10); dir.writeUInt16LE(0, 12); dir.writeUInt16LE(DOS_DATE, 14);
+    dir.writeUInt32LE(crc, 16); dir.writeUInt32LE(data.length, 20); dir.writeUInt32LE(data.length, 24);
+    dir.writeUInt16LE(n.length, 28); dir.writeUInt32LE((0o100644 << 16) >>> 0, 38); dir.writeUInt32LE(offset, 42);
+    local.push(head, n, data);
+    central.push(dir, n);
+    offset += head.length + n.length + data.length;
+  }
+  const size = central.reduce((s, b) => s + b.length, 0);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(files.length, 8); end.writeUInt16LE(files.length, 10);
+  end.writeUInt32LE(size, 12); end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...local, ...central, end]);
+}
+
+const sha256hex = (buf) => createHash("sha256").update(buf).digest("hex");
+
+function dist(html) {
+  const git = (...args) => execFileSync("git", ["-C", ROOT, ...args], { encoding: "utf8" }).trim();
+  const commit = git("rev-parse", "HEAD");
+  // Built from what git has at that commit, or BUILD says it isn't
+  const dirty = git("status", "--porcelain", "--untracked-files=no", "--", "src", "vendor", "tools", "LICENSE") !== "";
+  const out = join(ROOT, "dist/gapwallet");
+  rmSync(join(ROOT, "dist"), { recursive: true, force: true });
+  mkdirSync(out, { recursive: true });
+  const page = Buffer.from(html, "utf8"), license = readFileSync(join(ROOT, "LICENSE"));
+  const zipName = `gapwallet-${commit.slice(0, 12)}.zip`;
+  const archive = zip([["gapwallet/index.html", page], ["gapwallet/LICENSE", license]]);
+  writeFileSync(join(out, "index.html"), page);
+  writeFileSync(join(out, "LICENSE"), license);
+  writeFileSync(join(out, zipName), archive);
+  const build = [
+    "GapWallet",
+    `commit ${commit}${dirty ? " with uncommitted changes: not a release" : ""}`,
+    "source https://github.com/marcocarnut/GapWallet",
+    "",
+    "SHA-256",
+    `${sha256hex(page)}  index.html`,
+    `${sha256hex(license)}  LICENSE`,
+    `${sha256hex(archive)}  ${zipName}`,
+    "",
+    "To compare: check out the commit, run node tools/build.mjs --dist, and",
+    "compare dist/gapwallet/BUILD with this file. index.html is also the",
+    "repository's gapwallet.html at that commit, byte for byte.",
+    "",
+  ].join("\n");
+  writeFileSync(join(out, "BUILD"), build);
+  process.stdout.write(build);
 }
 
 const html = page();
+if (process.argv.includes("--dist")) dist(html);
 if (process.argv.includes("--check")) {
   let current = "";
   try {
