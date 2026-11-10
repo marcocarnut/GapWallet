@@ -22,11 +22,14 @@ signers that read Electrum's Base43 codes or BBQr, too.
 
 ## Use it
 
-- **Hosted:** [gapkeep.org/gapwallet/](https://gapkeep.org/gapwallet/). The
-  page there is `gapwallet.html` from this repository; its `BUILD` file gives
-  the commit and the SHA-256 of each file, so you can rebuild and compare.
-- **A checked copy, locally:** download the zip beside it, check its SHA-256
-  against `BUILD`, unzip, and open `gapwallet/index.html`. It runs from disk
+- **Hosted:** [gapwallet.org](https://gapwallet.org/), published from this
+  repository by GitHub Pages (`.github/workflows/pages.yml`). The page there
+  is `gapwallet.html` from this repository, byte for byte;
+  [gapwallet.org/BUILD](https://gapwallet.org/BUILD) gives the commit and the
+  SHA-256 of each file, so you can rebuild and compare.
+- **A checked copy, locally:** download the zip named in `BUILD`
+  (`https://gapwallet.org/gapwallet-<commit>.zip`), check its SHA-256 against
+  `BUILD`, unzip, and open `gapwallet/index.html`. It runs from disk
   (`file://`): no local server is needed, and nothing is installed. The camera
   works from disk too (checked in Chromium).
 - **From source:** `node tools/build.mjs` writes `gapwallet.html`; open it.
@@ -88,9 +91,44 @@ Changing either server saves it and reloads the page, which then allows only
 the new one. `tests/page.test.mjs` checks that a request to any other origin
 fails.
 
+### Hosting, and what it can't do
+
+gapwallet.org is GapWallet's own origin: nothing else is served there, so no
+other page can read or change what the wallet keeps in the browser.
+
+GitHub Pages sends no custom headers, and some protections only exist as
+headers. The one that matters here is `frame-ancestors`, which forbids other
+sites from showing the page in a frame and laying their own buttons over it
+(clickjacking); a `<meta>` policy can't set it. So the page checks for itself:
+inside another page's frame it doesn't start, and says so. A frame that turns
+scripts off can't run it at all. Pages does serve HTTPS, and the page sends
+no referrer (`<meta name="referrer">`).
+
+If you host a copy yourself, send `Content-Security-Policy: frame-ancestors
+'none'`, `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer`,
+and give it an origin of its own.
+
+### Comparing the hosted page with its source
+
+The build is deterministic: the same commit gives the same bytes, on GitHub's
+runner or yours (Node 18 or later, nothing to install).
+
+```sh
+git clone https://github.com/marcocarnut/GapWallet && cd GapWallet
+git checkout <the commit in https://gapwallet.org/BUILD>
+node tools/build.mjs --dist
+curl -s https://gapwallet.org/BUILD | diff - dist/BUILD
+curl -s https://gapwallet.org/ | sha256sum    # the index.html line of BUILD
+```
+
+`BUILD` says "with uncommitted changes: not a release" when built from a
+changed tree; the workflow refuses to publish such a build. The site also has
+a `CNAME` file, which GitHub Pages wants and `BUILD` doesn't list.
+
 ## Checking a receive address on GapKeep
 
-A tampered copy of this page (on a compromised site, or one swapped on disk)
+A tampered copy of this page (on a compromised site or GitHub account, or one
+swapped on disk)
 could show someone else's address as yours, and the signer only sees
 addresses when you send. So check a receive address on the air-gapped side
 before giving it out for anything large. GapWallet shows each receive
@@ -147,7 +185,7 @@ shown when you add an account can be checked the same way.
 
 ```sh
 node tools/build.mjs        # writes gapwallet.html
-node tools/build.mjs --dist # and dist/gapwallet/: index.html, LICENSE, a zip of both, BUILD
+node tools/build.mjs --dist # and dist/, the site: index.html, LICENSE, a zip of both, BUILD
 tools/vendor.py --check     # checks vendor/ against its manifest and GapKeep's commit
 npm install                 # only for the page tests: puppeteer-core drives Chromium
 npm test
@@ -196,8 +234,9 @@ elsewhere. Below the box the page shows the amount it read, in full.
 - **The server isn't trusted** (above).
 - **The page runs only what it was built with** (above). All text reaches the
   page as text nodes.
-- **Reproducible:** the same commit builds the same bytes, and `BUILD` beside
-  the hosted page says which commit it is.
+- **Reproducible:** the same commit builds the same bytes, and
+  [gapwallet.org/BUILD](https://gapwallet.org/BUILD) says which commit the
+  hosted page is (above).
 
 Report vulnerabilities privately: see [SECURITY.md](SECURITY.md).
 Contributions: [CONTRIBUTING.md](CONTRIBUTING.md).

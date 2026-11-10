@@ -40,6 +40,11 @@ before(async () => {
   });
   otherHits = 0;
   otherServer = await listen((q, r) => {
+    if (q.url === "/frame") { // another site, framing the wallet
+      r.writeHead(200, { "Content-Type": "text/html" });
+      r.end(`<!DOCTYPE html><iframe id="w" src="${pageUrl}"></iframe>`);
+      return;
+    }
     otherHits++;
     r.writeHead(200, cors);
     r.end("hello");
@@ -165,6 +170,18 @@ test("the policy holds: after narrowing, only the chosen server can be reached",
   assert.equal(otherHits, 0);
   const origins = new Set(seen.requests.map((u) => new URL(u).origin));
   assert.ok(![...origins].some((o) => o !== pageUrl && o !== new URL(chainUrl).origin && o !== otherUrl && !o.startsWith("data")), [...origins].join());
+  await ctx.close();
+});
+
+test("in another site's frame the wallet doesn't start", { skip }, async () => {
+  const ctx = await browser.createBrowserContext();
+  const page = await ctx.newPage();
+  await page.goto(`${otherUrl}/frame`);
+  const frame = await (await page.waitForSelector("#w")).contentFrame();
+  await frame.waitForFunction(() => document.getElementById("app").textContent.length > 0);
+  assert.match(await frame.$eval("#app", (e) => e.textContent), /doesn't run inside another page/);
+  assert.equal(await frame.$("#key"), null);
+  assert.equal(await frame.evaluate(() => localStorage.length), 0);
   await ctx.close();
 });
 

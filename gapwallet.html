@@ -23,7 +23,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-21Yk63S3IcOQ5wig8rvigY97TSCyiWvRebwBcCVZ1oE='; style-src 'sha256-1imCSK8rmk5C8poqTEyMMfJ7hOMFvv0B0P1LSjLrCJo='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-LbrlBjHso0+LttaKBFJ1W+HaEFm4yMnCjJfBH6bRoRk='; style-src 'sha256-1imCSK8rmk5C8poqTEyMMfJ7hOMFvv0B0P1LSjLrCJo='; img-src data:; connect-src https: http:; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:,">
@@ -3936,6 +3936,7 @@ const PT_BR = {
   // ui.js: server
   "An Esplora server answers for this {network} account. There is no default: it's your choice, because of what the server learns.": "Um servidor Esplora responde por esta conta da {network}. Não há padrão: a escolha é sua, por causa do que o servidor fica sabendo.",
   "Use {host}": "Usar {host}",
+  "GapWallet doesn't run inside another page. Open it in a tab of its own.": "O GapWallet não roda dentro de outra página. Abra-o numa aba só dele.",
   "Or your own server": "Ou o seu próprio servidor",
   "Use this server": "Usar este servidor",
   "Choose a server": "Escolha um servidor",
@@ -21003,7 +21004,7 @@ const { parseServer } = __mod("src/esplora.js");
 const { load } = __mod("src/store.js");
 const { App, priceUrlFor } = __mod("src/ui.js");
 const { parsePriceUrl } = __mod("src/price.js");
-const { setLanguage, startLanguage, language } = __mod("src/i18n.js");
+const { setLanguage, startLanguage, language, tr } = __mod("src/i18n.js");
 
 // Narrows the build's connect-src to the one server this page was started
 // with (docs/ESPLORA.md, "Content-Security-Policy"). Before any request;
@@ -21023,13 +21024,31 @@ function narrowPolicy(server, priceUrl) {
   document.head.append(meta);
 }
 
-const state = load();
-setLanguage(startLanguage(state.language, navigator.languages || [navigator.language]));
-document.documentElement.lang = language();
-const record = state.accounts.find((a) => a.id === state.current) || state.accounts[0] || null;
-narrowPolicy(record ? state.servers[record.network] : null, record ? priceUrlFor(state, record.network) : null);
-installCrypto();
-new App(document.getElementById("app"), state, record).start();
+// Inside another page's frame the wallet doesn't start. A page framing it
+// could lay its own buttons over these (clickjacking), and the header that
+// forbids framing, frame-ancestors, can't be set by a <meta> policy, nor sent
+// by every host (GitHub Pages sends no custom headers). A frame sandboxed
+// without scripts can't run the wallet at all.
+function framed() {
+  try {
+    return window.top !== window.self;
+  } catch {
+    return true;
+  }
+}
+
+if (framed()) {
+  setLanguage(startLanguage(null, navigator.languages || [navigator.language]));
+  document.getElementById("app").textContent = tr("GapWallet doesn't run inside another page. Open it in a tab of its own.");
+} else {
+  const state = load();
+  setLanguage(startLanguage(state.language, navigator.languages || [navigator.language]));
+  document.documentElement.lang = language();
+  const record = state.accounts.find((a) => a.id === state.current) || state.accounts[0] || null;
+  narrowPolicy(record ? state.servers[record.network] : null, record ? priceUrlFor(state, record.network) : null);
+  installCrypto();
+  new App(document.getElementById("app"), state, record).start();
+}
 
 
 }

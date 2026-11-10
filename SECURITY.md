@@ -30,8 +30,9 @@ A problem in the signer itself goes to
   the Content-Security-Policy, the QR and file readers, BIP-329 imports.
 - A server, file or QR code that crashes the page or makes it show something
   false (a balance, a fee, "this is the transaction built here").
-- The build: anything that makes `gapwallet.html` or the hosted `dist/` differ
-  from what its commit builds (`tools/build.mjs`, `tools/vendor.py`).
+- The build and the site: anything that makes `gapwallet.html` or
+  gapwallet.org differ from what its commit builds (`tools/build.mjs`,
+  `tools/vendor.py`, `.github/workflows/pages.yml`).
 
 ## Not a vulnerability
 
@@ -45,4 +46,6 @@ A problem in the signer itself goes to
   wallet; that is why the build is reproducible, why `BUILD` gives its hashes,
   and why receive addresses should be checked on GapKeep (README, "Checking a
   receive address on GapKeep").
+- Missing HTTP headers on gapwallet.org: GitHub Pages sends none of its own
+  choosing. The page refuses to run in a frame instead (README, "Hosting").
 - Someone with access to your unlocked computer and browser.
